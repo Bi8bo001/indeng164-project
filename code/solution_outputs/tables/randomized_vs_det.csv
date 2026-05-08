@@ -1,0 +1,4 @@
+B,det_score,rand_score,rand_minus_det,det_pool
+0.001,0.9666666666666666,0.9701813565237403,0.003514689857073705,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|deepseek-v3-0324|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+0.005,0.9833333333333332,0.9833333333333332,0.0,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+0.02,0.9833333333333332,0.9833333333333332,0.0,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507

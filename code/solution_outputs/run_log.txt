@@ -1,0 +1,125 @@
+==============================================================================
+INDENG 164 — LLM Pool Curation via Two-Stage Stochastic Optimization
+==============================================================================
+Raw rows: 7,860; prompts: 240; models: 33
+  Full coverage models kept: 32; dropped 1: ['deepseek-v3.1-terminus']
+After coverage restriction: prompts=240, models=32, rows=7,680
+
+[1] Baselines
+  Best single model: gpt-5 -> score=0.8875, cost=0.042548
+  Single Best per Benchmark -> score=0.8875, cost=0.037823, sel={'AIME': 'gpt-5', 'GPQA': 'gpt-5', 'LCB': 'qwen3-235b-a22b-thinking-2507', 'MMLU-Pro': 'gpt-5'}
+  Oracle (per-prompt best)  -> score=0.9833, cost=0.001699
+
+[2] BC-2SP Pareto frontier (sweep B)
+          B  avg_cost  avg_score  pool_size                                                                                                                                                           pool
+0   0.00001  0.000010   0.891667          8  GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|Llama-3.1-Nemotron-Nano-8B-v1|MiniCPM4.1-8B|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|gemma-2-9b-it|qwen3-235b-a22b-2507
+1   0.00010  0.000089   0.929167          8  GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+2   0.00030  0.000229   0.954167          8   GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+3   0.00050  0.000229   0.954167          8   GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+4   0.00100  0.000822   0.966667          8             GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|deepseek-v3-0324|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+5   0.00200  0.001674   0.975000          8          GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|deepseek-v3-0324|gemini-2.5-flash|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+6   0.00500  0.003233   0.983333          8                                  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+7   0.01000  0.003233   0.983333          8                                  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+8   0.02000  0.003233   0.983333          8                                  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+9   0.05000  0.003233   0.983333          8                                  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+10  0.10000  0.003233   0.983333          8                                  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+  (65.0s)
+
+[3] Diminishing returns of K (B = 5e-3)
+    K  avg_cost  avg_score  pool_size                                                                                                                                                              pool
+0   1  0.004704   0.741667          1                                                                                                                                                        gpt-5-chat
+1   2  0.004886   0.891667          2                                                                                                                       MiniCPM4.1-8B|qwen3-235b-a22b-thinking-2507
+2   3  0.004953   0.925000          3                                                                                                                   deepseek-r1-0528|intern-s1|qwen3-235b-a22b-2507
+3   4  0.003922   0.945833          4                                                                                 Llama-3.1-8B-Instruct|deepseek-v3-0324|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+4   5  0.004553   0.962500          5                                                                             GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+5   6  0.004690   0.979167          6                                                                 GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+6   7  0.004519   0.983333          7                                                GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+7   8  0.003233   0.983333          8                                     GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+8   9  0.002635   0.983333          9                       GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+9  10  0.002273   0.983333         10  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+
+[4] Storage budget ablation (B = 5e-3, K = 8)
+  S_max_GB  avg_score  avg_cost  pool_size                                                                                                                           pool
+0      inf   0.983333  0.003233          8  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+1      200   0.983333  0.004849          8               GLM-Z1-9B-0414|Intern-S1-mini|deepseek-r1-0528|gemini-2.5-flash|glm-4.6|gpt-5|internlm3-8b-instruct|kimi-k2-0905
+2      100   0.983333  0.004849          8               GLM-Z1-9B-0414|Intern-S1-mini|deepseek-r1-0528|gemini-2.5-flash|glm-4.6|gpt-5|internlm3-8b-instruct|kimi-k2-0905
+3       50   0.983333  0.004849          8               GLM-Z1-9B-0414|Intern-S1-mini|deepseek-r1-0528|gemini-2.5-flash|glm-4.6|gpt-5|internlm3-8b-instruct|kimi-k2-0905
+4       20   0.970833  0.004900          8                        GLM-Z1-9B-0414|deepseek-r1-0528|deepseek-v3-0324|gemini-2.5-flash|glm-4.6|gpt-5|gpt-5-chat|kimi-k2-0905
+5      0.0   0.954167  0.004970          7                                       deepseek-r1-0528|deepseek-v3-0324|gemini-2.5-flash|glm-4.6|gpt-5|gpt-5-chat|kimi-k2-0905
+
+[5] Fairness slack ablation (B = 5e-3, K = 8, lambda = 1.0)
+   tau  avg_score  avg_cost  pool_size                                                                                                                           pool
+0  off   0.983333  0.003233          8  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+1  0.0   0.983333  0.003233          8  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+2  0.5   0.983333  0.003233          8  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+3  0.8   0.983333  0.003233          8  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+4  1.0   0.983333  0.003233          8  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+
+[6] Provider sensitivity (B = 5e-3, K = 8)
+       setting  avg_score  avg_cost                                                                                                                                      pool
+0         free   0.983333  0.003233             GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+1    no OpenAI   0.979167  0.002401  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|deepseek-v3-0324|gemini-2.5-flash|glm-4.6|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+2  must Claude   0.983333  0.004436        GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|claude-sonnet-4|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+
+[7] DRO BC-2SP (B = 5e-3, K = 8) — sweep delta
+   delta  avg_score_nominal  avg_cost_nominal  worst_case_score  pool_size                                                                                                                                              pool
+0    0.0           0.983333          0.004638          0.983333          8                  GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+1    0.1           0.983333          0.005000          0.981667          8   Llama-3.1-8B-UltraMedical|Llama-3.1-Nemotron-Nano-8B-v1|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+2    0.2           0.983333          0.004999          0.980000          8  Intern-S1-mini|Llama-3.1-8B-UltraMedical|Llama-3.1-Nemotron-Nano-8B-v1|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+3    0.3           0.983333          0.005000          0.978333          8  Intern-S1-mini|Llama-3.1-8B-UltraMedical|Llama-3.1-Nemotron-Nano-8B-v1|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+4    0.5           0.983333          0.004620          0.975000          8      Intern-S1-mini|Llama-3.1-8B-Instruct|Llama-3.1-Nemotron-Nano-8B-v1|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+5    0.7           0.983333          0.005000          0.971667          8                     GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+
+[8] DRO Pareto frontier (delta=0.3) along B sweep
+          B  avg_cost  avg_score  worst_case_score  pool_size                                                                                                                                                                         pool
+0   0.00001  0.000009   0.891667          0.872549          8                GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|Llama-3.1-Nemotron-Nano-8B-v1|MiniCPM4.1-8B|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|gemma-2-9b-it|qwen3-235b-a22b-2507
+1   0.00010  0.000090   0.929167          0.915196          8       DeepSeek-R1-0528-Qwen3-8B|GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|qwen3-235b-a22b-2507
+2   0.00030  0.000229   0.954167          0.944608          8                 GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+3   0.00050  0.000484   0.954167          0.947549          8             GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|deepseek-v3-0324|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+4   0.00100  0.001000   0.966667          0.960784          8  Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+5   0.00200  0.002000   0.975000          0.971739          8                                        GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+6   0.00500  0.005000   0.983333          0.978333          8                             Intern-S1-mini|Llama-3.1-8B-UltraMedical|Llama-3.1-Nemotron-Nano-8B-v1|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+7   0.01000  0.010000   0.983333          0.978333          7                                                            Llama-3.1-8B-UltraMedical|gemini-2.5-flash|glm-4-9b-chat|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+8   0.02000  0.009711   0.983333          0.978333          8                                             GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+9   0.05000  0.013824   0.983333          0.978333          8                                                 DeepSeek-R1-Distill-Qwen-7B|GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|OpenThinker3-7B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905
+10  0.10000  0.090808   0.983333          0.978333          8                                             Llama-3.1-8B-UltraMedical|Llama-3.1-Nemotron-Nano-8B-v1|deepseek-r1-0528|gemini-2.5-flash|gemini-2.5-pro|glm-4.6|gpt-5|intern-s1
+
+[9] QC-2SP (sweep Q-target)
+   Q_target  avg_score  avg_cost  pool_size                                                                                                                                                                     pool
+0      0.70   0.754167  0.000000          8          DeepSeek-R1-0528-Qwen3-8B|GLM-Z1-9B-0414|MiniCPM4.1-8B|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|cogito-v1-preview-llama-8B|glm-4-9b-chat|internlm3-8b-instruct
+1      0.80   0.808333  0.000000          8            GLM-Z1-9B-0414|MiniCPM4.1-8B|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|cogito-v1-preview-llama-8B|glm-4-9b-chat|granite-3.3-8b-instruct|internlm3-8b-instruct
+2      0.85   0.850000  0.000000          8            GLM-Z1-9B-0414|MiniCPM4.1-8B|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|cogito-v1-preview-llama-8B|glm-4-9b-chat|granite-3.3-8b-instruct|internlm3-8b-instruct
+3      0.90   0.900000  0.000018          8  GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|cogito-v1-preview-llama-8B|qwen3-235b-a22b-2507
+4      0.93   0.933333  0.000104          8                  GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|gpt-5-chat|qwen3-235b-a22b-2507
+5      0.95   0.950000  0.000189          8             GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+6      0.97   0.970833  0.001034          8                       GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|deepseek-v3-0324|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+7      0.98   0.983333  0.003234          8                                            GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+
+[10] Randomized routing (LP relax) vs deterministic
+       B  det_score  rand_score  rand_minus_det                                                                                                                                            det_pool
+0  0.001   0.966667    0.970181        0.003515  GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|deepseek-v3-0324|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+1  0.005   0.983333    0.983333        0.000000                       GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+2  0.020   0.983333    0.983333        0.000000                       GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+
+[11] Per-benchmark breakdown (B = 5e-3, K = 8)
+    dataset  avg_cost  avg_score  n_prompts
+0      AIME  0.005918   0.966667         60
+1      GPQA  0.001362   1.000000         60
+2       LCB  0.004788   1.000000         60
+3  MMLU-Pro  0.000865   0.966667         60
+
+[12] Usage shares of each selected model (B = 5e-3, K = 8)
+model
+GLM-Z1-9B-0414                   0.575000
+kimi-k2-0905                     0.100000
+Intern-S1-mini                   0.083333
+Llama-3.1-8B-Instruct            0.070833
+glm-4.6                          0.058333
+gemini-2.5-flash                 0.054167
+qwen3-235b-a22b-thinking-2507    0.041667
+gpt-5                            0.016667
+
+[13] Plots
+  saved figs to /workspace/optimization/code/solution_outputs/figs
+
+DONE — outputs at /workspace/optimization/code/solution_outputs

@@ -1,0 +1,4 @@
+setting,avg_score,avg_cost,pool
+free,0.9833333333333332,0.003233057520833333,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+no OpenAI,0.9791666666666665,0.002400642483333333,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|deepseek-v3-0324|gemini-2.5-flash|glm-4.6|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+must Claude,0.9833333333333332,0.0044360395,GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|claude-sonnet-4|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507

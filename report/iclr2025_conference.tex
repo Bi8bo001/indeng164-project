@@ -1,376 +1,432 @@
 \documentclass[11pt]{article}
-
-% =========================
-% Packages
-% =========================
 \usepackage[utf8]{inputenc}
-\usepackage[margin=1in]{geometry}
-\usepackage{amsmath, amssymb, amsthm}
+\usepackage[margin=0.85in,top=0.8in,bottom=0.85in]{geometry}
+\usepackage{amsmath, amssymb}
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{enumitem}
 \usepackage{xcolor}
-\usepackage{listings}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{microtype}
 
-% =========================
-% Code Style
-% =========================
-\lstset{
-    language=Python,
-    basicstyle=\ttfamily\small,
-    keywordstyle=\color{blue},
-    stringstyle=\color{red!70!black},
-    commentstyle=\color{green!50!black},
-    breaklines=true,
-    frame=single,
-    numbers=left,
-    numberstyle=\tiny,
-    tabsize=4
-}
+\setlength{\parskip}{0.5pt plus 1pt}
+\captionsetup{font=small,skip=2pt}
+\setlength{\textfloatsep}{4pt plus 1pt minus 1pt}
+\setlength{\floatsep}{4pt plus 1pt minus 1pt}
+\setlength{\intextsep}{4pt plus 1pt minus 1pt}
+\linespread{0.97}\selectfont
 
-% =========================
-% Title
-% =========================
-\title{Stochastic Optimization for Intelligent LLM Routing: \\
-A Cost-Quality Trade-off Study for an Agentic AI Company}
+\newcommand{\pP}{\mathcal{P}}\newcommand{\pM}{\mathcal{M}}
+\newcommand{\pD}{\mathcal{D}}\newcommand{\pU}{\mathcal{U}}
+\newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
 
+\title{\vspace{-1.6em}Curating a Robust LLM Pool: A Two-Stage Stochastic Optimization Approach\\for Cost-Constrained LLM Routing\vspace{-0.5em}}
+\author{Yu Hin Liang, Jingwen Yang \\ INDENG 164, Spring 2026}
+\date{\vspace{-1em}\today}
 
-\author{Yu Hin Liang, Jingwen Yang} 
+\begin{document}\maketitle\vspace{-1em}
 
-\date{\today}
-
-\begin{document}
-
-\maketitle
-
-% =========================
-% Abstract
-% =========================
 \begin{abstract}
-Large language model routing aims to assign each user prompt to an appropriate model from a candidate model pool. In agentic AI products such as coding assistants, stronger models often provide higher response quality but incur higher inference cost, while lightweight or open-source models are cheaper but may perform worse on difficult prompts. This project develops a two-stage stochastic optimization framework for selecting a compact model pool and routing uncertain prompt requests to selected models. We formulate budget-constrained and quality-constrained routing models, incorporate realistic deployment constraints, and approximate the stochastic program through sample average approximation using benchmark prompt data. Computational experiments are conducted to analyze the cost-quality frontier, pool-size effects, prompt-distribution robustness, and business implications for production deployment.
+\small
+LLM routing asks which model to call on each user prompt. We cast this problem
+for an agentic AI company as a two-stage stochastic mixed-integer program. The
+first stage selects a small \emph{pool} of models to maintain in production, and
+the second stage routes each realised prompt to one of the selected models.
+Sample-average approximation on \texttt{routerbench} (240 prompts, 32 models,
+four benchmark domains) produces a tractable MILP. We add four realistic
+deployment constraints (a pool-size cap, a storage budget, a per-prompt
+fairness slack, and provider rules) and a distributionally robust extension
+that hedges against shifts in the prompt mixture. The resulting policy traces
+a smooth Pareto frontier on the cost-quality plane. At a budget of \$$0.001$
+per prompt the policy reaches a weighted score of $0.967$, which already
+exceeds the best single model \textsc{gpt-5} by eight percentage points at
+fifty times lower cost. Saturating the budget at \$$0.005$ per prompt drives
+the score to the per-prompt oracle of $0.983$, a thirteen-fold cost reduction
+relative to running \textsc{gpt-5} on every prompt. A pool of $K=6$ already
+captures $99.7\%$ of the achievable quality, and a $\pm 70\%$ shift in
+benchmark proportions costs at most $1.2$ percentage points of worst-case
+quality.
 \end{abstract}
+\vspace{-0.4em}
 
-% =========================
-% 1. Introduction
-% =========================
 \section{Introduction}
+\label{sec:intro}
 
-\subsection{Company Background and Business Context}
+We adopt the role of an operations-research scientist at \textit{CodePilot AI},
+an agentic AI company that ships a Cursor-style coding assistant and a tutoring
+sidebar for STEM students. Its workload spans code, mathematics, and knowledge
+questions. For every prompt the company picks one of about thirty candidate
+LLMs, ranging from \textsc{gpt-5} at \$$0.04$ per prompt down to free
+open-source $9$\,B-parameter backbones. Choosing well, prompt by prompt, is
+the difference between profit and loss.
 
-We consider an agentic AI company, \textit{CodePilot AI}, that provides an AI coding assistant similar to Cursor. Users submit heterogeneous prompts involving coding, mathematics, knowledge reasoning, and general problem solving. The company can route each prompt to one of several candidate large language models, including flagship proprietary models and lightweight open-source models.
+Two decisions live on different time scales. \emph{Pool curation} selects
+which models to maintain in production and binds for weeks because each
+model carries integration, monitoring, and storage cost. \emph{Routing}
+selects which model to call on a given prompt and repeats over a stream of
+stochastic future requests. The best pool depends on the routing policy
+that will operate on it, and the best policy in turn depends on which models
+the company actually maintains. This coupling is the structure of a two-stage stochastic program
+with recourse. The pool $y$ is first-stage and is committed before the
+prompt distribution is realised, while the routing $x_\xi$ is second-stage
+and is made after the prompt is observed. The prompt distribution
+$\mathbb{P}$ is unknown and we observe only $|\pP|=240$ samples, so we use
+sample-average approximation. Model correctness is itself a Bernoulli
+outcome, which also makes the second-stage policy naturally stochastic.
 
-The central business challenge is to balance response quality and inference cost. Advanced models may solve more difficult prompts but are expensive to call. Lightweight models are cheaper and may be deployed locally, but their quality can be lower on complex prompts. Therefore, the company needs a principled routing policy that selects a small set of models to maintain and assigns each incoming prompt to an appropriate model.
+We study two questions. \textbf{RQ1: pool curation.} How many models, and
+which ones, should the company maintain under a fixed inference budget, and
+are there diminishing returns? \textbf{RQ2: distributional robustness.} If
+the prompt mix shifts, how much worst-case quality is lost, and is the
+optimal pool stable?
 
-\subsection{Research Questions}
+\section{Data and Notation}
+\label{sec:data}
 
-This project studies the following research questions:
+The \texttt{routerbench} dataset provides binary correctness
+$Q_{pm}\in\{0,1\}$ and per-prompt cost $C_{pm}\in[0,\$0.108]$ for $33$ models
+on $240$ prompts. The prompts are equally split across four benchmarks
+(\textsc{AIME, LCB, GPQA, MMLU-Pro}). One model
+(\textsc{deepseek-v3.1-terminus}) covers only $180$ of the $240$ prompts; we
+discard it and work with the $|\pM|=32$ fully-covered models to avoid ad hoc
+imputation. Nine of the remaining models have $C_m=0$ because they are
+open-source and can be served locally. The most expensive model is
+\textsc{gpt-5}, at \$$0.0425$ per prompt and weighted score $0.888$ on the
+dataset. We write $\pP_d$ for the prompt subset of domain $d\in\pD$, $w_p$ for
+the SAA prompt weight (uniform $1/|\pP|$ at baseline), $S_m$ for the storage
+footprint of model $m$ in GB (zero for API-only models), and use
+$(B,K,S^{\max},\tau,\lambda)$ for the cost budget, pool cap, storage cap,
+fairness target, and slack price.
 
-\begin{enumerate}[label=\textbf{RQ\arabic*.}]
-    \item \textbf{Model pool size:} How large should the selected model pool be to achieve near-optimal performance under a fixed cost budget? Do we observe diminishing marginal returns as the pool size increases?
-    \item \textbf{Routing concentration and model diversity:} Which models are selected in the optimal pool? Does the routing policy use models evenly, or does it concentrate traffic on a few dominant models?
-    \item \textbf{Robustness to prompt distribution shift:} How sensitive is the optimal routing policy when the incoming prompt distribution changes, for example when the company receives more coding prompts or more mathematical reasoning prompts?
-\end{enumerate}
-
-\subsection{Why Stochastic Optimization?}
-
-LLM routing naturally involves uncertainty. First, future user prompts are random and may not follow exactly the same distribution as the historical benchmark data. Second, model response quality and output cost may vary due to output length, sampling randomness, and prompt difficulty. Third, deployment decisions occur in stages: the company first selects a model pool before observing future prompts, and then routes each realized prompt to a selected model.
-
-For these reasons, a two-stage stochastic optimization model is suitable. The first-stage decision selects the model pool. The second-stage decision routes realized prompts to selected models. Since the true prompt distribution is unknown, we approximate the stochastic program using sample average approximation (SAA) based on the available dataset.
-
-% =========================
-% 2. Data Description
-% =========================
-\section{Data Description}
-
-The dataset contains cost and performance scores for a set of candidate models evaluated on benchmark prompts from several domains, including mathematics, coding, and knowledge reasoning. Let $\mathcal{P}$ denote the set of observed prompts and $\mathcal{M}$ denote the set of candidate models. For each prompt-model pair $(p,m)$, the dataset provides:
-
-\begin{itemize}
-    \item $C_{pm}$: the inference cost of using model $m$ on prompt $p$;
-    \item $Q_{pm}$: the response quality or performance score of model $m$ on prompt $p$;
-    \item $d(p)$: the domain or benchmark category of prompt $p$, such as math, code, or knowledge.
-\end{itemize}
-
-Some open-source models may have zero API cost, but they can still incur deployment overhead such as storage, latency, and maintenance cost. We incorporate these practical concerns through additional constraints in the optimization model.
-
-% =========================
-% 3. Optimization Model
-% =========================
 \section{Optimization Model}
+\label{sec:model}
 
-\subsection{Sets and Indices}
+\paragraph{Decision variables.}
+The first-stage variables $y_m\in\{0,1\}$, $m\in\pM$, encode whether model $m$
+is selected into the production pool. The second-stage variables
+$x_{pm}\in\{0,1\}$ encode the routing decision for each prompt. A non-negative
+slack $s_p\ge 0$ softens the per-prompt fairness target in cases where the
+data does not allow it to be met exactly.
 
-\begin{table}[h]
+\paragraph{Population two-stage program.}
+For a random prompt $\xi\sim\mathbb{P}$, the routing policy is a function
+$x(\xi)$ from prompts to feasible assignment vectors. The population
+optimisation is
+\begin{align}
+\max_{y,\,x(\cdot)}\
+& \E_{\xi}\!\left[\textstyle\sum_{m} Q(\xi,m)\,x_m(\xi)\right]
+\quad\text{s.t.}\quad
+\textstyle\sum_m x_m(\xi)=1,\ \ x_m(\xi)\le y_m \ \ \text{a.s.},\nonumber\\[-1pt]
+& \textstyle\sum_m y_m\le K,\ \ \sum_m S_m y_m \le S^{\max},\ \
+  \E_{\xi}\!\left[\sum_m C(\xi,m)\,x_m(\xi)\right]\le B.
+\end{align}
+The budget is imposed in expectation rather than per-realisation to match a
+monthly inference budget; $y$ is first-stage because it is committed before
+any prompt is seen, and $x$ is second-stage because it depends on $\xi$.
+
+\paragraph{Sample-average approximation (BC-2SP).}
+The true distribution $\mathbb{P}$ is unknown. We replace it by the empirical
+distribution on the $240$ observed prompts with weights $w_p$ and write
+$x_{pm}\equiv x_m(\xi=p)$. The deterministic-equivalent MILP is
+\begin{align}
+\max_{x,y,s}\quad
+& \sum_{p,m}\! w_p\,Q_{pm}\,x_{pm}
+\,-\,\lambda\sum_p w_p\, s_p
+\,-\,\varepsilon\sum_{p,m}\! w_p\,C_{pm}\,x_{pm}
+\label{eq:saa}\\[-1pt]
+\text{s.t.}\quad
+& \textstyle\sum_m x_{pm}=1,\quad x_{pm}\le y_m, \quad \sum_m y_m\le K,
+\quad \sum_m S_m y_m\le S^{\max},\nonumber\\[-1pt]
+& \textstyle\sum_{p,m}\! w_p\,C_{pm}\,x_{pm}\le B,\quad
+  \sum_m Q_{pm}\,x_{pm}+s_p\ge \tau,\quad
+  x_{pm},y_m\in\{0,1\},\ s_p\ge 0.\nonumber
+\end{align}
+The first term is the SAA estimator of expected quality. The second term
+softly penalises violation of the per-prompt fairness target $\tau$, with
+slack price $\lambda$ chosen so that the routing prefers a correct answer
+whenever one exists. The third term, with $\varepsilon=10^{-3}\!\ll\!\lambda$,
+is a cost tie-breaker that selects the cheapest among quality-equivalent
+solutions and removes a non-monotonicity along the upper frontier. Provider
+rules are encoded by fixing the corresponding $y_m$.
+
+\paragraph{Distributionally robust extension (DRO BC-2SP).}
+The benchmark mixture $w_d:=\Pr[\xi\in\pP_d]$ is itself uncertain. We use a
+relative-box ambiguity set around the empirical proportions
+$w_d^{0}=|\pP_d|/|\pP|$, namely
+$\pU(\delta)=\{w\in\Delta_{|\pD|}:\ |w_d-w_d^{0}|\le \delta\,w_d^{0}\ \forall d\}$.
+Let $f_d(x):=\tfrac{1}{|\pP_d|}\sum_{p\in\pP_d,m} Q_{pm}\,x_{pm}$ be the
+conditional expected score on domain $d$. The DRO objective is
+$\max_{y,x}\min_{w\in\pU(\delta)}\sum_d w_d f_d(x)$. Reparametrising
+$w_d=w_d^{0}(1+e_d)$ with $|e_d|\le\delta$ and $\sum_d w_d^{0} e_d=0$, the
+inner LP admits the closed-form dual
+$\min_{w}\sum_d w_d f_d(x)=\sum_d w_d^{0} f_d(x)
+   -\delta\cdot\min_\lambda\sum_d w_d^{0}|f_d(x)-\lambda|$,
+where the inner minimiser $\lambda^\star$ is the $w^{0}$-weighted median of
+$\{f_d(x)\}$. Linearising the absolute values with $z_d\ge 0$ and a free
+$\lambda$ gives the equivalent MILP
+\begin{equation}
+\max_{x,y,\lambda,z}\
+\sum_d w_d^{0} f_d(x)\,-\,\delta\sum_d w_d^{0} z_d
+\quad\text{s.t.}\quad
+z_d\ge f_d(x)-\lambda,\quad z_d\ge \lambda-f_d(x), \ \ \forall d\in\pD,
+\label{eq:dro_milp}
+\end{equation}
+together with the BC-2SP constraints in~\eqref{eq:saa} and the budget under
+nominal $w$. The reformulation adds only $|\pD|+1$ continuous variables and
+$2|\pD|$ inequality constraints, so it is essentially the same size as BC-2SP.
+
+\paragraph{Companion formulations.}
+Three variants share the same constraint set: \emph{QC-2SP} minimises
+expected cost subject to a target weighted score $Q^{\min}$ (the dual side
+of the same frontier); \emph{Randomised BC-2SP} relaxes $x_{pm}\in[0,1]$
+into a stochastic policy with $\Pr[\xi=p\mapsto m]=x_{pm}$; \emph{Cascade
+BC-2SP} pairs $(m_1,m_2)$ per prompt with a zero-cost verifier and escalates
+only on failure, giving a MILP of size $|\pP||\pM|^2$.
+
+\paragraph{Solving the MILP.}
+The BC-2SP MILP has $8{,}224$ binary variables and $8{,}163$ linear
+constraints. We implement BC-2SP, QC-2SP, DRO BC-2SP and the cascade variant
+in Pyomo with the HiGHS solver; a single instance solves in two to four
+seconds, and a full eleven-point frontier sweep completes in under one minute.
+Storage parameters $S_m$ are heuristics from the model name: roughly $14$ to
+$18$\,GB for $7$ to $9$\,B open-source backbones, $0$\,GB for provider-hosted
+APIs, and about $470$\,GB for the $235$\,B Qwen mixture-of-experts. The
+notebook \texttt{solution.ipynb} accompanies this report.
+
+\section{Experiments}
+\label{sec:exp}
+
+All experiments use uniform empirical weights $w_p=1/240$,
+$\varepsilon=10^{-3}$, and $\lambda=1$ unless otherwise stated.
+
+\paragraph{Cost-quality Pareto frontier.}
+We initially adopted the weighted-sum scalarisation
+$\min\,\mathrm{cost}-\alpha\cdot\mathrm{score}$ suggested by the starter
+code, but found that $\alpha$ has no operational meaning and that combining
+it with a fairness penalty collapses the pool to two or three models at
+small $\alpha$. Switching to an explicit budget $B$ removes both issues:
+the budget has clear monetary meaning, and sweeping it from $\$10^{-5}$ to
+$\$5\!\times\!10^{-3}$ at $K=8$ traces the BC-2SP frontier of
+Figure~\ref{fig:frontier}, which strictly dominates every Single-Best
+baseline. At $B=\$10^{-5}$ the
+policy already scores $0.892$, marginally above \textsc{gpt-5} but at four
+orders of magnitude lower cost, because the optimal pool concentrates on free
+open-source backbones. At $B=\$10^{-3}$ the score reaches $0.967$, which is
+eight percentage points above \textsc{gpt-5} at fifty times lower cost. At
+$B=\$5\!\times\!10^{-3}$ the policy attains the per-prompt oracle of $0.983$
+at actual cost \$$0.0032$ per prompt, a $13.1\!\times\!$ cost reduction
+relative to \textsc{gpt-5}. Beyond this budget the score saturates because no
+further quality is available in the data.
+
+\begin{figure}[t]
 \centering
-\begin{tabular}{ll}
-\toprule
-Notation & Description \\
-\midrule
-$\mathcal{M} = \{1,\ldots,M\}$ & Set of candidate models \\
-$\mathcal{P} = \{1,\ldots,P\}$ & Set of observed prompt samples \\
-$\mathcal{D}$ & Set of prompt domains or benchmark categories \\
-$\mathcal{P}_d$ & Set of prompts belonging to domain $d \in \mathcal{D}$ \\
-$\Omega$ & Sample space of future prompt requests \\
-\bottomrule
-\end{tabular}
-\caption{Sets and indices used in the optimization model.}
-\end{table}
+\includegraphics[width=0.6\textwidth]{figure/fig1_frontier.png}
+\caption{Cost-quality Pareto frontier on \texttt{routerbench}. Oracle is the
+per-prompt unconstrained optimum and serves as an upper bound on any
+pool-constrained policy. BC-2SP (red) reaches the oracle score with a pool of
+$K\!=\!8$ and dominates both Single-Best baselines by an order of magnitude
+in cost.}
+\label{fig:frontier}
+\end{figure}
 
-\subsection{Parameters}
+\paragraph{RQ1: diminishing returns of pool size.}
+Fixing $B=\$5\!\times\!10^{-3}$ and sweeping $K$ from $1$ to $10$
+(Figure~\ref{fig:K}) shows a fast-then-saturating curve. A single model
+achieves only $0.742$ because no model alone covers all four benchmarks
+adequately. Adding a second model already lifts the score to $0.892$
+(a fifteen percentage-point gain). The curve continues to rise but flattens
+quickly: $K=4$ reaches $0.946$, $K=6$ reaches $0.979$ ($99.6\%$ of the
+$K=10$ value), and from $K=7$ on the score is pinned at the oracle
+$0.983$. The operationally relevant message is that six to seven well-chosen
+models are sufficient regardless of how many candidates the company nominally
+has access to; further models are pure overhead.
 
-\begin{table}[h]
+\paragraph{Pool composition and traffic concentration.}
+Figure~\ref{fig:pool} shows the growth path of the optimal pool. The
+optimiser first picks complementary free open-source backbones, then admits a
+flagship model only at $K=4$, and uses mid-tier APIs to fill in between. In
+the converged $K=8$ pool, \textsc{gpt-5} routes only $1.7\%$ of traffic and
+serves as a backstop for the four hardest prompts that no smaller model can
+solve. The free \textsc{GLM-Z1-9B-0414} alone handles $57.5\%$ of prompts.
+The remaining traffic is distributed across \textsc{kimi-k2-0905} ($10.0\%$),
+\textsc{Intern-S1-mini} ($8.3\%$), \textsc{Llama-3.1-8B-Instruct} ($7.1\%$),
+\textsc{glm-4.6} ($5.8\%$), \textsc{gemini-2.5-flash} ($5.4\%$), and
+\textsc{qwen3-235b-thinking-2507} ($4.2\%$). The traffic is therefore not
+concentrated on the strongest single model; the optimal policy is mostly
+flat with a flagship as backstop.
+
+\begin{figure}[t]
 \centering
-\begin{tabular}{ll}
-\toprule
-Parameter & Description \\
-\midrule
-$C_{pm}$ & Cost of assigning prompt $p$ to model $m$ \\
-$Q_{pm}$ & Quality score of model $m$ on prompt $p$ \\
-$K$ & Maximum number of models selected in the pool \\
-$B$ & Average cost budget per prompt \\
-$\tau$ & Minimum acceptable average quality threshold \\
-$S_m$ & Storage requirement of model $m$ \\
-$S^{\max}$ & Total storage budget for locally deployed models \\
-$L_m$ & Expected latency of model $m$ \\
-$L^{\max}$ & Maximum allowed average latency \\
-$w_p$ & Weight of prompt $p$ in the empirical or reweighted distribution \\
-$\lambda$ & Penalty coefficient for quality-threshold violation \\
-\bottomrule
-\end{tabular}
-\caption{Model parameters.}
-\end{table}
+\begin{subfigure}{0.42\textwidth}
+\includegraphics[width=\linewidth]{figure/fig2_K_curve.png}
+\caption{Diminishing returns of pool cap $K$ at $B=\$0.005$.}
+\label{fig:K}
+\end{subfigure}\hfill
+\begin{subfigure}{0.46\textwidth}
+\includegraphics[width=\linewidth]{figure/fig3_pool_composition.png}
+\caption{Pool composition vs.\ $K$. \textsc{gpt-5} enters at $K=4$.}
+\label{fig:pool}
+\end{subfigure}
+\caption{Quality saturates at $K=7$, and a $K=6$ pool already captures
+$99.7\%$ of the achievable quality.}
+\end{figure}
 
-\subsection{Decision Variables}
+\paragraph{Per-benchmark breakdown.}
+At $B=\$0.005$, $K=8$ the policy solves \textsc{LCB} and \textsc{GPQA}
+perfectly and reaches $0.967$ on both \textsc{AIME} and \textsc{MMLU-Pro}.
+The four remaining prompts are exactly those for which no model in the data
+produces a correct answer, so the routing matches the per-prompt oracle on
+every solvable prompt.
 
-The first-stage variables are model selection decisions:
+\paragraph{RQ2: distributional robustness.}
+Sweeping $\delta$ from $0$ to $0.7$ at $B=\$0.005$, $K=8$
+(Figure~\ref{fig:dro}), the nominal score remains pinned at $0.983$.
+The worst-case score from~\eqref{eq:dro_milp} drops by $0.50$, $0.83$, and
+$1.17$ percentage points at $\delta=0.3$, $0.5$, $0.7$. The DRO pool
+overlaps with the nominal in seven of eight slots for $\delta\le 0.5$, so
+the pool itself is highly stable. The price of distributional robustness on
+this dataset is therefore small.
 
-\[
-y_m =
-\begin{cases}
-1, & \text{if model } m \text{ is selected into the routing pool}, \\
-0, & \text{otherwise}.
-\end{cases}
-\quad \forall m \in \mathcal{M}.
-\]
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.55\textwidth]{figure/fig5_dro_robustness.png}
+\caption{Price of distributional robustness. The worst-case score drops by
+about $1.2$ percentage points at $\delta=0.7$, while the nominal score stays
+at the oracle value.}
+\label{fig:dro}
+\end{figure}
 
-The second-stage variables are routing decisions after prompts are realized:
+\paragraph{Constraint ablations and formulation comparison.}
+Storage caps down to $50$\,GB are free; tightening to $20$\,GB costs
+$1.2$\,pp because the optimiser falls back from $\sim\!8$\,B backbones onto
+smaller alternatives. Excluding $\{\textsc{gpt-5},\textsc{gpt-5-chat}\}$
+costs only $0.4$\,pp ($0.983\!\to\!0.979$ at \$$0.0024$) since
+\textsc{qwen3-235b-thinking-2507} and \textsc{kimi-k2-0905} absorb the slack;
+forcing \textsc{claude-sonnet-4} preserves the score at $38\%$ more cost.
+Across formulations, BC-2SP and QC-2SP coincide at the corresponding
+$(B, Q^{\min})$ pair as a primal-dual pair on the same frontier, the DRO
+variant trades a small cost increase for $\delta$-protection, and the
+randomised and cascade variants give only marginal lift on this binary-score
+dataset (randomised: $+0.35$\,pp at $B\!=\!\$0.001$; cascade: matches BC-2SP
+at $B\!=\!\$0.0005$).
 
-\[
-x_{pm} =
-\begin{cases}
-1, & \text{if prompt } p \text{ is assigned to model } m, \\
-0, & \text{otherwise}.
-\end{cases}
-\quad \forall p \in \mathcal{P}, m \in \mathcal{M}.
-\]
-
-We also introduce slack variables for soft quality guarantees:
-
-\[
-s_p \geq 0, \quad \forall p \in \mathcal{P},
-\]
-
-where $s_p$ measures the violation of the minimum prompt-level quality requirement.
-
-% =========================
-% 3.1 Population Form
-% =========================
-\subsection{Population Two-Stage Stochastic Formulation}
-
-Let $\xi$ denote a random future prompt drawn from the true prompt distribution $\mathbb{P}$. The first-stage decision selects a model pool $y$. After observing prompt $\xi$, the second-stage routing decision assigns the prompt to one selected model.
-
-The population-level stochastic optimization problem can be written as:
-
-\begin{align}
-\max_{y} \quad 
-& \mathbb{E}_{\xi \sim \mathbb{P}}
-\left[
-    \max_{x(\xi)}
-    \sum_{m \in \mathcal{M}} Q(\xi,m)x_{\xi m}
-\right] \\
-\text{s.t.} \quad
-& \sum_{m \in \mathcal{M}} y_m \leq K, \\
-& y_m \in \{0,1\}, \quad \forall m \in \mathcal{M}, \\
-& x_{\xi m} \leq y_m, \quad \forall m \in \mathcal{M}, \\
-& \sum_{m \in \mathcal{M}} x_{\xi m} = 1, \\
-& x_{\xi m} \in \{0,1\}, \quad \forall m \in \mathcal{M}, \\
-& \mathbb{E}_{\xi \sim \mathbb{P}}
-\left[
-    \sum_{m \in \mathcal{M}} C(\xi,m)x_{\xi m}
-\right]
-\leq B.
-\end{align}
-
-This population problem cannot be solved directly because the true distribution $\mathbb{P}$ is unknown. Therefore, we approximate it using the empirical prompt dataset.
-
-% =========================
-% 3.2 SAA Model
-% =========================
-\subsection{Sample Average Approximation}
-
-Using observed prompts $\mathcal{P}$, we approximate the expected quality and cost with weighted sample averages. The SAA formulation is:
-
-\begin{align}
-\max_{x,y,s} \quad 
-& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} Q_{pm} x_{pm}
-- \lambda \sum_{p \in \mathcal{P}} w_p s_p
-\label{eq:saa_obj} \\
-\text{s.t.} \quad
-& \sum_{m \in \mathcal{M}} x_{pm} = 1,
-&& \forall p \in \mathcal{P},
-\label{eq:assignment} \\
-& x_{pm} \leq y_m,
-&& \forall p \in \mathcal{P}, m \in \mathcal{M},
-\label{eq:linking} \\
-& \sum_{m \in \mathcal{M}} y_m \leq K,
-\label{eq:pool_size} \\
-& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} C_{pm} x_{pm} \leq B,
-\label{eq:budget} \\
-& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} L_m x_{pm} \leq L^{\max},
-\label{eq:latency} \\
-& \sum_{m \in \mathcal{M}} S_m y_m \leq S^{\max},
-\label{eq:storage} \\
-& \sum_{m \in \mathcal{M}} Q_{pm}x_{pm} + s_p \geq \tau,
-&& \forall p \in \mathcal{P},
-\label{eq:min_quality} \\
-& x_{pm} \in \{0,1\},
-&& \forall p \in \mathcal{P}, m \in \mathcal{M}, \\
-& y_m \in \{0,1\},
-&& \forall m \in \mathcal{M}, \\
-& s_p \geq 0,
-&& \forall p \in \mathcal{P}.
-\end{align}
-
-The objective in Equation~\eqref{eq:saa_obj} maximizes expected quality while penalizing violations of prompt-level quality guarantees. Constraint~\eqref{eq:assignment} ensures each prompt is assigned to exactly one model. Constraint~\eqref{eq:linking} ensures that prompts can only be assigned to selected models. Constraint~\eqref{eq:pool_size} limits the size of the model pool. Constraint~\eqref{eq:budget} imposes an average inference-cost budget. Constraints~\eqref{eq:latency} and~\eqref{eq:storage} are realistic deployment constraints. Constraint~\eqref{eq:min_quality} imposes a soft minimum quality guarantee.
-
-\subsection{Robust Prompt Distribution Analysis}
-
-To study robustness under prompt distribution shift, we define different prompt weights $w_p$. The default empirical distribution uses:
-
-\[
-w_p = \frac{1}{|\mathcal{P}|}, \quad \forall p \in \mathcal{P}.
-\]
-
-For a coding-heavy company, we assign larger weights to coding prompts:
-
-\[
-w_p =
-\begin{cases}
-\frac{\rho}{|\mathcal{P}_{\text{code}}|}, & p \in \mathcal{P}_{\text{code}}, \\
-\frac{1-\rho}{|\mathcal{P} \setminus \mathcal{P}_{\text{code}}|}, & p \notin \mathcal{P}_{\text{code}},
-\end{cases}
-\]
-
-where $\rho \in [0,1]$ controls the importance of coding prompts. By solving the model for multiple values of $\rho$, we evaluate whether the selected model pool and routing policy are stable under prompt distribution shift.
-
-\subsection{Alternative Formulation: Cost Minimization under Quality Constraint}
-
-As an alternative formulation, we also consider minimizing cost subject to a target quality level:
-
-\begin{align}
-\min_{x,y,s} \quad 
-& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} C_{pm}x_{pm}
-+ \lambda \sum_{p \in \mathcal{P}} w_p s_p \\
-\text{s.t.} \quad
-& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} Q_{pm}x_{pm}
-+ \sum_{p \in \mathcal{P}} w_p s_p
-\geq Q^{\min}, \\
-& \text{Constraints } \eqref{eq:assignment} \text{--} \eqref{eq:storage}, \\
-& x_{pm} \in \{0,1\}, \quad y_m \in \{0,1\}, \quad s_p \geq 0.
-\end{align}
-
-This formulation is useful when the company has a fixed service-quality target and wants to minimize operating cost.
-
-% =========================
-% 4. Computational Implementation
-% =========================
-\section{Computational Implementation}
-
-We implement the proposed mixed-integer optimization models in Pyomo and solve them using a mixed-integer linear programming solver. The full implementation is submitted separately together with this report.
-
-The implementation takes as input the prompt-model cost matrix $C_{pm}$, the quality matrix $Q_{pm}$, prompt domain labels, and model-level metadata such as storage and latency assumptions. For each experiment, we specify the model hyperparameters, including the model pool size $K$, budget level $B$, quality threshold $\tau$, and prompt-distribution weights $w_p$.
-
-After solving the optimization problem, we extract the following quantities for analysis:
-
-\begin{itemize}
-    \item the selected model pool $\{m \in \mathcal{M}: y_m = 1\}$;
-    \item the routing assignment $\{x_{pm}\}_{p \in \mathcal{P}, m \in \mathcal{M}}$;
-    \item the average routing cost;
-    \item the average response quality;
-    \item the usage share of each selected model;
-    \item the number and magnitude of quality-threshold violations.
-\end{itemize}
-
-We repeat the optimization over different budget levels, pool-size limits, and prompt-distribution weights to generate the cost-quality frontier, ablation studies, and robustness analysis presented in the next section.
-
-% =========================
-% 5. Experiments and Visualization
-% =========================
-\section{Experiments and Visualization}
-
-\subsection{Experimental Design}
-
-We conduct the following computational experiments:
-
-\begin{enumerate}
-    \item \textbf{Cost-quality frontier:} Solve the budget-constrained model under different budget levels $B$ and plot average cost against average quality.
-    \item \textbf{Pool-size ablation:} Vary the maximum pool size $K$ and measure the marginal improvement in quality.
-    \item \textbf{Prompt-distribution robustness:} Reweight prompt categories using different values of $\rho$ and analyze changes in selected models and routing decisions.
-    \item \textbf{Constraint ablation:} Compare solutions with and without storage, latency, and minimum-quality constraints.
-\end{enumerate}
-
-\subsection{Cost-Quality Frontier}
-
-
-\subsection{Effect of Model Pool Size}
-
-
-\subsection{Routing Usage Distribution}
-
-% =========================
-% 6. Discussion and Recommendations
-% =========================
 \section{Discussion and Recommendations}
+\label{sec:discuss}
 
-\subsection{Answers to Research Questions}
+\paragraph{Answer to RQ1.}
+A pool of $K^\star=6$ is sufficient and $K=7$ already saturates at the
+oracle. The pool the optimiser produces is heterogeneous and not concentrated:
+\textsc{gpt-5} routes only $1.7\%$ of traffic, while free open-source
+backbones together handle about $60\%$. The dominant strategy on this
+benchmark is therefore to route most prompts through free models and reserve
+a single flagship as a backstop for the small set of hard prompts.
 
-\paragraph{RQ1: Model pool size.}
-We analyze whether increasing $K$ improves average quality and whether the improvement saturates after a small number of models. If the quality gain becomes marginal beyond a certain $K$, this suggests that the company can maintain a compact model pool without sacrificing much performance.
+\paragraph{Answer to RQ2.}
+The price of distributional robustness is small. The worst-case score drops
+by at most $1.2$\,pp when each benchmark proportion swings by $\pm 70\%$,
+and the optimal pool overlaps in seven of eight slots with the nominal
+solution for $\delta\le 0.5$. Since the DRO MILP is the same size as BC-2SP,
+deploying it by default is essentially free insurance against mix shifts.
 
-\paragraph{RQ2: Routing concentration and model diversity.}
-We examine the selected models and their usage shares. A highly concentrated routing policy may indicate that one model dominates the cost-quality trade-off. A more diverse routing policy may suggest that different models specialize in different prompt domains.
+\paragraph{Recommendations.}
+Maintain a six-model pool combining a flagship backstop, a mid-tier API, a
+reasoning-focused model, and two or three free $\sim\!8$\,B open-source
+backbones (concretely: \textsc{gpt-5}, \textsc{gemini-2.5-flash},
+\textsc{kimi-k2-0905}, \textsc{GLM-Z1-9B-0414}, \textsc{Intern-S1-mini},
+\textsc{Llama-3.1-8B-Instruct}). Re-solve the SAA MILP whenever cost or
+quality targets change, treat fairness as soft via $s_p$, and budget
+$50$\,GB of local storage.
 
-\paragraph{RQ3: Prompt-distribution robustness.}
-We compare model pools selected under different prompt weights. If the selected pool changes substantially when coding prompts receive higher weight, the deployment policy should be customized for the company's expected user base.
+\paragraph{Limitations and future work.}
+Binary correctness underuses information; graded scores would let the
+randomised and cascade variants dominate by a larger margin. Latency and
+log-loss objectives drop into the SAA MILP without difficulty, and an
+online-learning loop that updates $\hat{\mathbb{P}}$ from production traffic
+would close the deployment loop.
 
-\subsection{Business Recommendations}
+\paragraph{Personal takeaway.}
+The striking moment was watching a routing policy thirteen times cheaper
+than \textsc{gpt-5} attain its oracle of $0.983$. Treating the data as a
+$240\!\times\!32$ matrix of $(Q,C)$ pairs immediately suggested the two-stage
+form, and HiGHS solved every instance in seconds, keeping modelling and
+analysis fast enough to be genuinely fun.
 
-Based on the optimization results, we provide the following recommendations:
+\appendix
+\section{Detailed numerical results}
+\label{app:tables}
 
-\begin{itemize}
-    \item Select a model pool size that captures most of the achievable quality while limiting engineering overhead.
-    \item Use lightweight or open-source models for easy prompts when they satisfy quality requirements.
-    \item Reserve expensive flagship models for prompts where their marginal quality improvement justifies the additional cost.
-    \item Monitor prompt distribution over time and periodically re-solve the routing optimization problem.
-\end{itemize}
+\begin{table}[h]\centering\footnotesize
+\begin{tabular}{lcccl}
+\toprule
+Formulation & Setting & Score (cost \$/prompt) & $|$Pool$|$ & Note\\\midrule
+BC-2SP                       & $B=\$0.005$       & $0.9833$\,($0.00323$)             & 8 & main\\
+QC-2SP                       & $Q^{\min}=0.98$   & $0.9833$\,($0.00323$)             & 8 & dual matches BC-2SP\\
+QC-2SP                       & $Q^{\min}=0.95$   & $0.9500$\,($0.00019$)             & 8 & cheap operating point\\
+QC-2SP                       & $Q^{\min}=0.90$   & $0.9000$\,($0.0000179$)           & 8 & near-free quality\\
+DRO BC-2SP, $\delta=0.3$     & $B=\$0.005$       & $0.9833$ wc $0.978$\,($0.00500$)  & 8 & robust\\
+DRO BC-2SP, $\delta=0.7$     & $B=\$0.005$       & $0.9833$ wc $0.972$\,($0.00500$)  & 8 & wide ambiguity\\
+Randomised BC-2SP             & $B=\$0.001$      & $0.9702$\,($0.00100$)             & 8 & $+0.35$\,pp vs det\\
+Cascade BC-2SP                & $B=\$0.0005$     & $0.9542$\,($0.00027$)             & 8 & matches BC-2SP\\\midrule
+Single Best (\textsc{gpt-5})  & ($-$)            & $0.8875$\,($0.04255$)             & 1 & best single model\\
+Single Best per Benchmark      & ($-$)            & $0.8875$\,($0.03782$)             & 4 & one model per domain\\
+Oracle (per-prompt best)       & ($-$)            & $0.9833$\,($0.00170$)             & 32 & unconstrained upper bound\\
+\bottomrule
+\end{tabular}
+\caption{Comparison of formulations and baselines at representative
+operating points. Cost in USD per prompt. ``wc'' denotes the worst-case
+score under the corresponding ambiguity radius.}
+\label{tab:formulations}
+\end{table}
 
-\subsection{Limitations and Future Work}
+\begin{table}[h]\centering\footnotesize
+\begin{tabular}{lcccl}
+\toprule
+Setting & Score & Cost (\$/prompt) & $|$Pool$|$ & $\Delta$ vs baseline\\\midrule
+BC-2SP free                       & $0.9833$ & $0.00323$ & 8 & ($-$)\\
+no OpenAI (exclude \textsc{gpt-5}, \textsc{gpt-5-chat}) & $0.9792$ & $0.00240$ & 8 & $-0.4$\,pp\\
+must include \textsc{claude-sonnet-4} & $0.9833$ & $0.00444$ & 8 & $+38\%$ cost\\
+$S^{\max}\!=\!200$\,GB            & $0.9833$ & $0.00495$ & 8 & ($-$)\\
+$S^{\max}\!=\!100$\,GB            & $0.9833$ & $0.00485$ & 8 & ($-$)\\
+$S^{\max}\!=\!50$\,GB             & $0.9833$ & $0.00485$ & 8 & ($-$)\\
+$S^{\max}\!=\!20$\,GB             & $0.9708$ & $0.00441$ & 8 & $-1.2$\,pp\\
+\bottomrule
+\end{tabular}
+\caption{Constraint ablations at $B=\$0.005$, $K=8$.}
+\label{tab:ablations}
+\end{table}
 
-This project uses benchmark data as a proxy for future prompt requests. In production, the company would need to collect real user prompts and online feedback. Future extensions include dynamic real-time routing, cascading routing with verifiers, online learning, and distributionally robust optimization with formal ambiguity sets.
-
-% =========================
-% 7. Personal Takeaway
-% =========================
-\section{Personal Takeaway}
-
-Through this project, we learned how operations research can provide a structured framework for decision-making in modern AI systems. LLM routing is not only a machine learning problem but also an optimization problem involving cost, quality, uncertainty, and deployment constraints. This project helped us understand how stochastic programming and mixed-integer optimization can be used to design more interpretable and practical AI infrastructure.
-
-% =========================
-% References
-% =========================
-\bibliographystyle{plain}
-\bibliography{references}
+\begin{table}[h]
+\centering\footnotesize
+\begin{minipage}[t]{0.50\textwidth}\centering\vspace{0pt}
+\begin{tabular}{lccc}
+\toprule
+Benchmark & \#prompts & Score & Cost (\$)\\\midrule
+\textsc{AIME}      & 60  & $0.967$ & $0.00592$\\
+\textsc{GPQA}      & 60  & $1.000$ & $0.00136$\\
+\textsc{LCB}       & 60  & $1.000$ & $0.00479$\\
+\textsc{MMLU-Pro}  & 60  & $0.967$ & $0.00086$\\\midrule
+Aggregate           & 240 & $0.983$ & $0.00323$\\
+\bottomrule
+\end{tabular}\\[2pt]
+{\scriptsize Table~3: Per-benchmark breakdown at $B\!=\!\$0.005$, $K\!=\!8$.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.46\textwidth}\centering\vspace{0pt}
+\begin{tabular}{ccccc}
+\toprule
+$\delta$ & nom. & wc & $\Delta$ & $\lambda^\star$\\\midrule
+$0.0$ & $0.983$ & $0.983$ & $0.00$\,pp & $0.00$\\
+$0.1$ & $0.983$ & $0.982$ & $-0.16$\,pp & $1.00$\\
+$0.2$ & $0.983$ & $0.980$ & $-0.33$\,pp & $1.00$\\
+$0.3$ & $0.983$ & $0.978$ & $-0.50$\,pp & $1.00$\\
+$0.5$ & $0.983$ & $0.975$ & $-0.83$\,pp & $1.00$\\
+$0.7$ & $0.983$ & $0.972$ & $-1.17$\,pp & $0.97$\\
+\bottomrule
+\end{tabular}\\[2pt]
+{\scriptsize Table~4: DRO sweep at $B\!=\!\$0.005$, $K\!=\!8$. ``wc'' is the
+worst-case score from~\eqref{eq:dro_milp}.}
+\end{minipage}
+\end{table}
 
 \end{document}

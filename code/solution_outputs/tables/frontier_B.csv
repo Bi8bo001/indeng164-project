@@ -1,0 +1,8 @@
+B,avg_cost,avg_score,pool_size,pool
+1e-05,1.0137354166666665e-05,0.8916666666666666,8,GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|Llama-3.1-Nemotron-Nano-8B-v1|MiniCPM4.1-8B|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|gemma-2-9b-it|qwen3-235b-a22b-2507
+0.0001,8.891283333333333e-05,0.9291666666666666,8,GLM-Z1-9B-0414|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|OpenThinker3-7B|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+0.0005,0.00022871987916666666,0.954166666666667,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|NVIDIA-Nemotron-Nano-9B-v2|Qwen2.5-Coder-7B-Instruct|deepseek-v3-0324|qwen3-235b-a22b-2507
+0.001,0.0008223387541666667,0.9666666666666666,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|MiniCPM4.1-8B|deepseek-v3-0324|kimi-k2-0905|qwen3-235b-a22b-2507|qwen3-235b-a22b-thinking-2507
+0.005,0.003233057520833333,0.9833333333333332,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+0.01,0.0032330914375,0.9833333333333332,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+0.05,0.0032330973958333334,0.9833333333333332,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507

@@ -1,0 +1,5 @@
+delta,avg_score_nominal,avg_cost_nominal,worst_case_score,pool_size,pool
+0.0,0.9833333333333332,0.004638456458333333,0.9833333333333333,8,GLM-Z1-9B-0414|Llama-3.1-8B-UltraMedical|MiniCPM4.1-8B|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+0.2,0.9833333333333332,0.004999483966666667,0.9799999999999989,8,Intern-S1-mini|Llama-3.1-8B-UltraMedical|Llama-3.1-Nemotron-Nano-8B-v1|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+0.5,0.9833333333333332,0.0046201650374999995,0.9749999999999978,8,Intern-S1-mini|Llama-3.1-8B-Instruct|Llama-3.1-Nemotron-Nano-8B-v1|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+0.7,0.9833333333333332,0.004999980016666667,0.971666666666664,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507

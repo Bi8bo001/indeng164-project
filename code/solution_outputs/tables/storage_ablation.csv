@@ -1,0 +1,6 @@
+S_max_GB,avg_score,avg_cost,pool_size,pool
+inf,0.9833333333333332,0.003233057520833333,8,GLM-Z1-9B-0414|Intern-S1-mini|Llama-3.1-8B-Instruct|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905|qwen3-235b-a22b-thinking-2507
+200,0.9833333333333332,0.004954925095833333,8,GLM-Z1-9B-0414|Intern-S1-mini|deepseek-r1-0528|gemini-2.5-flash|glm-4.6|gpt-5|internlm3-8b-instruct|kimi-k2-0905
+100,0.9833333333333332,0.004848858470833333,8,GLM-Z1-9B-0414|Intern-S1-mini|deepseek-r1-0528|gemini-2.5-flash|glm-4.6|gpt-5|internlm3-8b-instruct|kimi-k2-0905
+50,0.9833333333333332,0.004848858470833333,8,GLM-Z1-9B-0414|Intern-S1-mini|deepseek-r1-0528|gemini-2.5-flash|glm-4.6|gpt-5|internlm3-8b-instruct|kimi-k2-0905
+20,0.9708333333333332,0.004406529375,8,DeepSeek-R1-0528-Qwen3-8B|OpenThinker3-7B|deepseek-r1-0528|deepseek-v3-0324|gemini-2.5-flash|glm-4.6|gpt-5|kimi-k2-0905
