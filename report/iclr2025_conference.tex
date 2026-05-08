@@ -10,23 +10,33 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{microtype}
+\usepackage[round,sort&compress,numbers]{natbib}
+
+% \documentclass{article}
+\usepackage{iclr2025_conference,times}
+\iclrfinalcopy
+
+% Widen ICLR's default 5.5in textwidth so long sentences fit better.
+\setlength{\textwidth}{6.0in}
+\setlength{\oddsidemargin}{0.25in}
+\setlength{\evensidemargin}{0.25in}
 
 \setlength{\parskip}{0.5pt plus 1pt}
-\captionsetup{font=small,skip=2pt}
-\setlength{\textfloatsep}{4pt plus 1pt minus 1pt}
-\setlength{\floatsep}{4pt plus 1pt minus 1pt}
-\setlength{\intextsep}{4pt plus 1pt minus 1pt}
+\captionsetup{font=small,skip=3pt}
+\setlength{\textfloatsep}{12pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
 \linespread{0.97}\selectfont
 
 \newcommand{\pP}{\mathcal{P}}\newcommand{\pM}{\mathcal{M}}
 \newcommand{\pD}{\mathcal{D}}\newcommand{\pU}{\mathcal{U}}
 \newcommand{\E}{\mathbb{E}}\newcommand{\R}{\mathbb{R}}
 
-\title{\vspace{-1.6em}Curating a Robust LLM Pool: A Two-Stage Stochastic Optimization Approach\\for Cost-Constrained LLM Routing\vspace{-0.5em}}
-\author{Yu Hin Liang, Jingwen Yang \\ INDENG 164, Spring 2026}
-\date{\vspace{-1em}\today}
+\title{Curating a Robust LLM Pool: A Two-Stage Stochastic Optimization Approach for Cost-Constrained LLM Routing}
+\author{Jingwen Yang, Yu Hin Liang \\ INDENG 164, Spring 2026}
+\date{}
 
-\begin{document}\maketitle\vspace{-1em}
+\begin{document}\maketitle
 
 \begin{abstract}
 \small
@@ -47,9 +57,10 @@ the score to the per-prompt oracle of $0.983$, a thirteen-fold cost reduction
 relative to running \textsc{gpt-5} on every prompt. A pool of $K=6$ already
 captures $99.7\%$ of the achievable quality, and a $\pm 70\%$ shift in
 benchmark proportions costs at most $1.2$ percentage points of worst-case
-quality.
+quality. Code is available at
+\url{https://github.com/Bi8bo001/indeng164-project}.
 \end{abstract}
-\vspace{-0.4em}
+% \vspace{-0.4em}
 
 \section{Introduction}
 \label{sec:intro}
@@ -67,31 +78,33 @@ which models to maintain in production and binds for weeks because each
 model carries integration, monitoring, and storage cost. \emph{Routing}
 selects which model to call on a given prompt and repeats over a stream of
 stochastic future requests. The best pool depends on the routing policy
-that will operate on it, and the best policy in turn depends on which models
-the company actually maintains. This coupling is the structure of a two-stage stochastic program
-with recourse. The pool $y$ is first-stage and is committed before the
-prompt distribution is realised, while the routing $x_\xi$ is second-stage
-and is made after the prompt is observed. The prompt distribution
-$\mathbb{P}$ is unknown and we observe only $|\pP|=240$ samples, so we use
-sample-average approximation. Model correctness is itself a Bernoulli
-outcome, which also makes the second-stage policy naturally stochastic.
+that will operate on it, and the best policy in turn depends on which
+models the company actually maintains. This coupling is the structure of a
+two-stage stochastic program with recourse~\citep{birge1997introduction}:
+the pool $y$ is first-stage and is committed before the prompt distribution
+is realised, while the routing $x_\xi$ is second-stage and is made after
+each prompt is observed. The prompt distribution $\mathbb{P}$ itself is
+unknown, and we observe only $|\pP|=240$ samples from it, so we approximate
+expectations through sample-average approximation.
 
-We study two questions. \textbf{RQ1: pool curation.} How many models, and
-which ones, should the company maintain under a fixed inference budget, and
-are there diminishing returns? \textbf{RQ2: distributional robustness.} If
-the prompt mix shifts, how much worst-case quality is lost, and is the
-optimal pool stable?
+Two questions then drive the report. They are precisely the questions a
+deployment manager would ask before signing off on a routing system:
+\textbf{RQ1: pool curation.} How many models, and which ones, should the
+company maintain under a fixed inference budget, and are there diminishing
+returns as the pool grows? \textbf{RQ2: distributional robustness.} If the
+prompt mix shifts in production, how much worst-case quality is lost, and
+is the optimal pool stable across such shifts?
 
 \section{Data and Notation}
 \label{sec:data}
 
-The \texttt{routerbench} dataset provides binary correctness
-$Q_{pm}\in\{0,1\}$ and per-prompt cost $C_{pm}\in[0,\$0.108]$ for $33$ models
-on $240$ prompts. The prompts are equally split across four benchmarks
+The \texttt{routerbench} dataset~\citep{li2026routerbench} provides binary
+correctness $Q_{pm}\in\{0,1\}$ and per-prompt cost $C_{pm}\in[0,\$0.108]$
+for $33$ models on $240$ prompts. The prompts are equally split across four benchmarks
 (\textsc{AIME, LCB, GPQA, MMLU-Pro}). One model
-(\textsc{deepseek-v3.1-terminus}) covers only $180$ of the $240$ prompts; we
-discard it and work with the $|\pM|=32$ fully-covered models to avoid ad hoc
-imputation. Nine of the remaining models have $C_m=0$ because they are
+(\textsc{deepseek-v3.1-terminus}~\citep{liu2024deepseek}) covers only $180$
+of the $240$ prompts; we discard it and work with the $|\pM|=32$
+fully-covered models to avoid ad hoc imputation. Nine of the remaining models have $C_m=0$ because they are
 open-source and can be served locally. The most expensive model is
 \textsc{gpt-5}, at \$$0.0425$ per prompt and weighted score $0.888$ on the
 dataset. We write $\pP_d$ for the prompt subset of domain $d\in\pD$, $w_p$ for
@@ -127,9 +140,10 @@ monthly inference budget; $y$ is first-stage because it is committed before
 any prompt is seen, and $x$ is second-stage because it depends on $\xi$.
 
 \paragraph{Sample-average approximation (BC-2SP).}
-The true distribution $\mathbb{P}$ is unknown. We replace it by the empirical
-distribution on the $240$ observed prompts with weights $w_p$ and write
-$x_{pm}\equiv x_m(\xi=p)$. The deterministic-equivalent MILP is
+The true distribution $\mathbb{P}$ is unknown, so we apply sample-average
+approximation~\citep{shapiro2021lectures}. We replace $\mathbb{P}$ by the
+empirical distribution on the $240$ observed prompts with weights $w_p$ and
+write $x_{pm}\equiv x_m(\xi=p)$. The deterministic-equivalent MILP is
 \begin{align}
 \max_{x,y,s}\quad
 & \sum_{p,m}\! w_p\,Q_{pm}\,x_{pm}
@@ -152,44 +166,60 @@ solutions and removes a non-monotonicity along the upper frontier. Provider
 rules are encoded by fixing the corresponding $y_m$.
 
 \paragraph{Distributionally robust extension (DRO BC-2SP).}
-The benchmark mixture $w_d:=\Pr[\xi\in\pP_d]$ is itself uncertain. We use a
-relative-box ambiguity set around the empirical proportions
-$w_d^{0}=|\pP_d|/|\pP|$, namely
-$\pU(\delta)=\{w\in\Delta_{|\pD|}:\ |w_d-w_d^{0}|\le \delta\,w_d^{0}\ \forall d\}$.
-Let $f_d(x):=\tfrac{1}{|\pP_d|}\sum_{p\in\pP_d,m} Q_{pm}\,x_{pm}$ be the
-conditional expected score on domain $d$. The DRO objective is
-$\max_{y,x}\min_{w\in\pU(\delta)}\sum_d w_d f_d(x)$. Reparametrising
-$w_d=w_d^{0}(1+e_d)$ with $|e_d|\le\delta$ and $\sum_d w_d^{0} e_d=0$, the
-inner LP admits the closed-form dual
-$\min_{w}\sum_d w_d f_d(x)=\sum_d w_d^{0} f_d(x)
-   -\delta\cdot\min_\lambda\sum_d w_d^{0}|f_d(x)-\lambda|$,
-where the inner minimiser $\lambda^\star$ is the $w^{0}$-weighted median of
-$\{f_d(x)\}$. Linearising the absolute values with $z_d\ge 0$ and a free
-$\lambda$ gives the equivalent MILP
+The empirical proportions $w_d^{0}=|\pP_d|/|\pP|$ are themselves a noisy
+estimate of the production benchmark mixture
+$w_d:=\Pr[\xi\in\pP_d]$, and a router that is tuned to $w^{0}$ may degrade
+under a future shift. Motivated by distributionally robust
+optimisation more generally~\citep{esfahani2018data}, we hedge against
+this by modelling the true mixture as lying in a simple
+\emph{relative-box} ambiguity set (rather than a Wasserstein ball)
+$\pU(\delta)=\{w\in\Delta_{|\pD|}:\ |w_d-w_d^{0}|\le \delta\,w_d^{0}\ \forall d\in\pD\}$
+around $w^{0}$, while keeping prompts within each domain uniformly
+weighted. Writing $f_d(x):=\tfrac{1}{|\pP_d|}\sum_{p\in\pP_d,m} Q_{pm}\,x_{pm}$
+for the conditional expected score on domain $d$, the DRO objective becomes
+$\max_{y,x}\min_{w\in\pU(\delta)}\sum_d w_d f_d(x)$.
+
+The inner minimisation over $w$ is a small LP that admits a closed form.
+Reparametrising $w_d=w_d^{0}(1+e_d)$ with $|e_d|\le\delta$ and
+$\sum_d w_d^{0} e_d=0$ and applying LP duality gives
+\begin{equation}
+\min_{w\in\pU(\delta)}\sum_d w_d f_d(x)
+\,=\,\sum_d w_d^{0} f_d(x)\,-\,
+   \delta\cdot\min_{\lambda\in\R}\sum_d w_d^{0}\,|f_d(x)-\lambda|,
+\end{equation}
+where the inner minimiser $\lambda^{\star}$ is the $w^{0}$-weighted median
+of $\{f_d(x)\}$. Linearising the absolute value with non-negative
+auxiliaries $z_d$ and a free $\lambda$ turns the outer max into the MILP
 \begin{equation}
 \max_{x,y,\lambda,z}\
 \sum_d w_d^{0} f_d(x)\,-\,\delta\sum_d w_d^{0} z_d
 \quad\text{s.t.}\quad
-z_d\ge f_d(x)-\lambda,\quad z_d\ge \lambda-f_d(x), \ \ \forall d\in\pD,
+z_d\ge f_d(x)-\lambda,\ \ z_d\ge \lambda-f_d(x), \ \ \forall d\in\pD,
 \label{eq:dro_milp}
 \end{equation}
-together with the BC-2SP constraints in~\eqref{eq:saa} and the budget under
-nominal $w$. The reformulation adds only $|\pD|+1$ continuous variables and
-$2|\pD|$ inequality constraints, so it is essentially the same size as BC-2SP.
+together with the BC-2SP constraints in~\eqref{eq:saa} and the budget
+imposed under the nominal $w$. The reformulation adds only $|\pD|+1$
+continuous variables and $2|\pD|$ inequality constraints, so DRO BC-2SP is
+essentially the same size as BC-2SP.
 
 \paragraph{Companion formulations.}
-Three variants share the same constraint set: \emph{QC-2SP} minimises
-expected cost subject to a target weighted score $Q^{\min}$ (the dual side
-of the same frontier); \emph{Randomised BC-2SP} relaxes $x_{pm}\in[0,1]$
-into a stochastic policy with $\Pr[\xi=p\mapsto m]=x_{pm}$; \emph{Cascade
-BC-2SP} pairs $(m_1,m_2)$ per prompt with a zero-cost verifier and escalates
-only on failure, giving a MILP of size $|\pP||\pM|^2$.
+We also consider three variants that share the constraint set of
+BC-2SP and stress different aspects of the trade-off. \emph{QC-2SP}
+minimises expected cost subject to a target weighted score $Q^{\min}$, and
+traces the same Pareto frontier from the dual side. \emph{Randomised
+BC-2SP} relaxes $x_{pm}\in[0,1]$, so that the recourse becomes an explicit
+stochastic policy that selects model $m$ on prompt $p$ with probability
+$x_{pm}$. \emph{Cascade BC-2SP} pairs each prompt with a tuple
+$(m_1,m_2)$ and a zero-cost verifier: model $m_1$ is invoked first, and the
+system escalates to $m_2$ only on failure, which gives a MILP with
+$|\pP||\pM|^2$ binary variables.
 
 \paragraph{Solving the MILP.}
 The BC-2SP MILP has $8{,}224$ binary variables and $8{,}163$ linear
 constraints. We implement BC-2SP, QC-2SP, DRO BC-2SP and the cascade variant
-in Pyomo with the HiGHS solver; a single instance solves in two to four
-seconds, and a full eleven-point frontier sweep completes in under one minute.
+in Pyomo~\citep{bynum2021pyomo} with the HiGHS solver~\citep{huangfu2018parallelizing};
+a single instance solves in two to four seconds, and a full eleven-point
+frontier sweep completes in under one minute.
 Storage parameters $S_m$ are heuristics from the model name: roughly $14$ to
 $18$\,GB for $7$ to $9$\,B open-source backbones, $0$\,GB for provider-hosted
 APIs, and about $470$\,GB for the $235$\,B Qwen mixture-of-experts. The
@@ -198,8 +228,23 @@ notebook \texttt{solution.ipynb} accompanies this report.
 \section{Experiments}
 \label{sec:exp}
 
+
+
 All experiments use uniform empirical weights $w_p=1/240$,
-$\varepsilon=10^{-3}$, and $\lambda=1$ unless otherwise stated.
+$\varepsilon=10^{-3}$, $\lambda=1$, and $\tau=1$ unless otherwise stated;
+under $\tau=1$ the slack $s_p$ records whether prompt $p$ is left unsolved
+by its assigned model.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.6\textwidth]{figure/fig1_frontier.png}
+\caption{Cost-quality Pareto frontier on \texttt{routerbench}. Oracle is the
+per-prompt unconstrained optimum and serves as an upper bound on any
+pool-constrained policy. BC-2SP (red) reaches the oracle score with a pool of
+$K\!=\!8$ and dominates both Single-Best baselines by an order of magnitude
+in cost.}
+\label{fig:frontier}
+\end{figure}
 
 \paragraph{Cost-quality Pareto frontier.}
 We initially adopted the weighted-sum scalarisation
@@ -215,28 +260,38 @@ policy already scores $0.892$, marginally above \textsc{gpt-5} but at four
 orders of magnitude lower cost, because the optimal pool concentrates on free
 open-source backbones. At $B=\$10^{-3}$ the score reaches $0.967$, which is
 eight percentage points above \textsc{gpt-5} at fifty times lower cost. At
-$B=\$5\!\times\!10^{-3}$ the policy attains the per-prompt oracle of $0.983$
-at actual cost \$$0.0032$ per prompt, a $13.1\!\times\!$ cost reduction
+$B=\$5\!\times\!10^{-3}$ the policy attains the per-prompt oracle quality
+of $0.983$ at actual cost \$$0.0032$ per prompt, a $13.1\!\times\!$ cost
+reduction
 relative to \textsc{gpt-5}. Beyond this budget the score saturates because no
-further quality is available in the data.
+further quality is available in the data. Table~\ref{tab:headline}
+summarises the headline operating points.
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.6\textwidth]{figure/fig1_frontier.png}
-\caption{Cost-quality Pareto frontier on \texttt{routerbench}. Oracle is the
-per-prompt unconstrained optimum and serves as an upper bound on any
-pool-constrained policy. BC-2SP (red) reaches the oracle score with a pool of
-$K\!=\!8$ and dominates both Single-Best baselines by an order of magnitude
-in cost.}
-\label{fig:frontier}
-\end{figure}
+\begin{table}[h]\centering\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Policy & Score & Cost (\$/prompt) & Pool size $|$y$|$\\\midrule
+Single Best (\textsc{gpt-5})              & $0.8875$ & $0.04255$  & $1$\\
+BC-2SP, $B\!=\!\$10^{-4}$                  & $0.9292$ & $0.000089$ & $8$\\
+BC-2SP, $B\!=\!\$10^{-3}$                  & $0.9667$ & $0.000822$ & $8$\\
+\textbf{BC-2SP, $B\!=\!\$5\!\times\!10^{-3}$} & $\mathbf{0.9833}$ & $\mathbf{0.00323}$ & $\mathbf{8}$\\
+Oracle (per-prompt best)                   & $0.9833$ & $0.00170$  & $32$\\
+\bottomrule
+\end{tabular}
+\caption{Headline operating points along the BC-2SP frontier, against
+\textsc{gpt-5} (best single model) and the per-prompt oracle
+(unconstrained upper bound). The bolded row is our recommended setting.}
+\label{tab:headline}
+\end{table}\vspace{1.5mm}
 
 \paragraph{RQ1: diminishing returns of pool size.}
 Fixing $B=\$5\!\times\!10^{-3}$ and sweeping $K$ from $1$ to $10$
-(Figure~\ref{fig:K}) shows a fast-then-saturating curve. A single model
-achieves only $0.742$ because no model alone covers all four benchmarks
-adequately. Adding a second model already lifts the score to $0.892$
-(a fifteen percentage-point gain). The curve continues to rise but flattens
+(Figure~\ref{fig:K}) shows a fast-then-saturating curve. Under this
+budget a single-model pool achieves only $0.742$, because the strongest
+single model \textsc{gpt-5} is not budget-feasible as an always-on choice
+(it costs $\$0.0425$ per prompt) and no budget-feasible single model
+covers all four benchmarks adequately. Adding a second model already lifts
+the score to $0.892$ (a fifteen percentage-point gain). The curve continues to rise but flattens
 quickly: $K=4$ reaches $0.946$, $K=6$ reaches $0.979$ ($99.6\%$ of the
 $K=10$ value), and from $K=7$ on the score is pinned at the oracle
 $0.983$. The operationally relevant message is that six to seven well-chosen
@@ -244,18 +299,26 @@ models are sufficient regardless of how many candidates the company nominally
 has access to; further models are pure overhead.
 
 \paragraph{Pool composition and traffic concentration.}
-Figure~\ref{fig:pool} shows the growth path of the optimal pool. The
-optimiser first picks complementary free open-source backbones, then admits a
-flagship model only at $K=4$, and uses mid-tier APIs to fill in between. In
-the converged $K=8$ pool, \textsc{gpt-5} routes only $1.7\%$ of traffic and
-serves as a backstop for the four hardest prompts that no smaller model can
-solve. The free \textsc{GLM-Z1-9B-0414} alone handles $57.5\%$ of prompts.
-The remaining traffic is distributed across \textsc{kimi-k2-0905} ($10.0\%$),
-\textsc{Intern-S1-mini} ($8.3\%$), \textsc{Llama-3.1-8B-Instruct} ($7.1\%$),
+The growth path of the optimal pool, shown in Figure~\ref{fig:pool}, is
+itself informative. The optimiser first selects complementary free
+open-source backbones; only at $K=4$ does it admit a flagship; and at
+larger $K$ it fills in with mid-tier APIs. The composition is therefore not
+``small models on top of one big model'' but the reverse: a mostly free
+base, with a flagship pulled in only when the data demands it.
+
+The traffic distribution at $K=8$ tells the same story from a different
+angle. The single most-used model is the free
+\textsc{GLM-Z1-9B-0414}~\citep{glm2024chatglm}, which alone handles
+$57.5\%$ of prompts. The remaining traffic spreads across six models, with
+no single model exceeding $11\%$: \textsc{kimi-k2-0905} ($10.0\%$),
+\textsc{Intern-S1-mini} ($8.3\%$),
+\textsc{Llama-3.1-8B-Instruct}~\citep{grattafiori2024llama} ($7.1\%$),
 \textsc{glm-4.6} ($5.8\%$), \textsc{gemini-2.5-flash} ($5.4\%$), and
-\textsc{qwen3-235b-thinking-2507} ($4.2\%$). The traffic is therefore not
-concentrated on the strongest single model; the optimal policy is mostly
-flat with a flagship as backstop.
+\textsc{qwen3-235b-thinking-2507}~\citep{yang2025qwen3} ($4.2\%$).
+\textsc{gpt-5} sits at the bottom of this list at $1.7\%$, used only as a
+backstop on the four hardest prompts that no smaller model can solve. The
+optimal routing is therefore flat-with-a-backstop rather than concentrated
+on the strongest single model.
 
 \begin{figure}[t]
 \centering
@@ -274,11 +337,26 @@ $99.7\%$ of the achievable quality.}
 \end{figure}
 
 \paragraph{Per-benchmark breakdown.}
-At $B=\$0.005$, $K=8$ the policy solves \textsc{LCB} and \textsc{GPQA}
-perfectly and reaches $0.967$ on both \textsc{AIME} and \textsc{MMLU-Pro}.
+At $B\!=\!\$0.005$, $K\!=\!8$ the policy decomposes as in
+Table~\ref{tab:per_bench}: \textsc{LCB} and \textsc{GPQA} are solved
+perfectly, while \textsc{AIME} and \textsc{MMLU-Pro} both reach $0.967$.
 The four remaining prompts are exactly those for which no model in the data
-produces a correct answer, so the routing matches the per-prompt oracle on
-every solvable prompt.
+produces a correct answer, so the routing matches the per-prompt oracle
+quality on every solvable prompt.
+
+\begin{table}[h]\centering\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+Benchmark & \textsc{AIME} & \textsc{LCB} & \textsc{GPQA} & \textsc{MMLU-Pro}\\\midrule
+Score                & $0.967$  & $1.000$  & $1.000$  & $0.967$\\
+Cost (\$/prompt)     & $0.00592$ & $0.00479$ & $0.00136$ & $0.00086$\\
+\bottomrule
+\end{tabular}
+\caption{Per-benchmark score and cost at $B\!=\!\$0.005$, $K\!=\!8$
+(60 prompts each).}
+\label{tab:per_bench}
+\end{table}
+
 
 \paragraph{RQ2: distributional robustness.}
 Sweeping $\delta$ from $0$ to $0.7$ at $B=\$0.005$, $K=8$
@@ -299,60 +377,87 @@ at the oracle value.}
 \end{figure}
 
 \paragraph{Constraint ablations and formulation comparison.}
-Storage caps down to $50$\,GB are free; tightening to $20$\,GB costs
-$1.2$\,pp because the optimiser falls back from $\sim\!8$\,B backbones onto
-smaller alternatives. Excluding $\{\textsc{gpt-5},\textsc{gpt-5-chat}\}$
-costs only $0.4$\,pp ($0.983\!\to\!0.979$ at \$$0.0024$) since
-\textsc{qwen3-235b-thinking-2507} and \textsc{kimi-k2-0905} absorb the slack;
-forcing \textsc{claude-sonnet-4} preserves the score at $38\%$ more cost.
-Across formulations, BC-2SP and QC-2SP coincide at the corresponding
-$(B, Q^{\min})$ pair as a primal-dual pair on the same frontier, the DRO
-variant trades a small cost increase for $\delta$-protection, and the
-randomised and cascade variants give only marginal lift on this binary-score
-dataset (randomised: $+0.35$\,pp at $B\!=\!\$0.001$; cascade: matches BC-2SP
-at $B\!=\!\$0.0005$).
+The realistic constraints behave as one would hope. Storage caps down to
+$50$\,GB are free, while tightening to $20$\,GB costs $1.2$\,pp because
+the optimiser falls back from $\sim\!8$\,B-parameter open-source backbones
+onto smaller alternatives. Excluding the OpenAI flagship pair costs only
+$0.4$\,pp and actually \emph{lowers} cost to \$$0.0024$ per prompt, because
+\textsc{qwen3-235b-thinking-2507} and \textsc{kimi-k2-0905} absorb most of
+the lost quality; mandating \textsc{claude-sonnet-4} preserves the score
+but raises cost by $38\%$. Across formulations, BC-2SP and QC-2SP coincide
+at the corresponding $(B, Q^{\min})$ pair as expected for a primal-dual
+pair on the same Pareto frontier, the DRO variant pays a small cost
+premium for $\delta$-protection, and the randomised and cascade variants
+give only marginal lift on this binary-score dataset (randomised
+$+0.35$\,pp at $B\!=\!\$0.001$; cascade matches BC-2SP at $B\!=\!\$0.0005$).
+Finer-grained graded scores would amplify the latter two in production.
 
 \section{Discussion and Recommendations}
 \label{sec:discuss}
 
 \paragraph{Answer to RQ1.}
-A pool of $K^\star=6$ is sufficient and $K=7$ already saturates at the
-oracle. The pool the optimiser produces is heterogeneous and not concentrated:
-\textsc{gpt-5} routes only $1.7\%$ of traffic, while free open-source
-backbones together handle about $60\%$. The dominant strategy on this
-benchmark is therefore to route most prompts through free models and reserve
-a single flagship as a backstop for the small set of hard prompts.
+A pool of $K^{\star}=6$ models is sufficient: it captures $99.7\%$ of the
+quality of any larger pool we tested, and adding a seventh model already
+pushes the score onto the per-prompt oracle quality. Crucially, the pool that the
+optimiser produces is heterogeneous and not concentrated. \textsc{gpt-5}
+routes only $1.7\%$ of traffic, while free open-source backbones together
+handle about $60\%$. The cost-quality optimum on this benchmark is
+therefore obtained by routing most prompts through free models and
+reserving a single flagship as a backstop for the small set of hard
+prompts that no smaller model can solve.
 
 \paragraph{Answer to RQ2.}
-The price of distributional robustness is small. The worst-case score drops
-by at most $1.2$\,pp when each benchmark proportion swings by $\pm 70\%$,
-and the optimal pool overlaps in seven of eight slots with the nominal
-solution for $\delta\le 0.5$. Since the DRO MILP is the same size as BC-2SP,
-deploying it by default is essentially free insurance against mix shifts.
+The cost of robustifying against benchmark-mix shifts is also small. Even
+when each benchmark proportion is allowed to swing by $\pm 70\%$, the
+worst-case score of the DRO solution drops by at most $1.2$\,pp; and for
+$\delta\le 0.5$ the DRO pool overlaps with the nominal solution in seven
+of eight slots. Because the DRO MILP is essentially the same size as
+BC-2SP, deploying the DRO solution by default is essentially free
+insurance against mix shifts.
 
 \paragraph{Recommendations.}
-Maintain a six-model pool combining a flagship backstop, a mid-tier API, a
-reasoning-focused model, and two or three free $\sim\!8$\,B open-source
-backbones (concretely: \textsc{gpt-5}, \textsc{gemini-2.5-flash},
+We recommend $K=6$ as the cost-conscious production default since it
+already captures $99.7\%$ of the achievable quality and saves the overhead
+of an extra slot; the figures and tables use $K=8$ only as a diagnostic
+upper-frontier setting that matches the oracle quality exactly. A concrete
+instance of the six-model pool combines a flagship backstop, a mid-tier
+API, a reasoning model, and two or three free $\sim\!8$\,B open-source
+backbones, e.g.\ $\{$\textsc{gpt-5}, \textsc{gemini-2.5-flash},
 \textsc{kimi-k2-0905}, \textsc{GLM-Z1-9B-0414}, \textsc{Intern-S1-mini},
-\textsc{Llama-3.1-8B-Instruct}). Re-solve the SAA MILP whenever cost or
-quality targets change, treat fairness as soft via $s_p$, and budget
-$50$\,GB of local storage.
+\textsc{Llama-3.1-8B-Instruct}$\}$. The SAA MILP solves in seconds, so the
+team should re-solve it whenever the cost or quality target changes rather
+than freezing the policy; fairness should be enforced softly through
+$s_p$ so that unsolvable prompts are absorbed by the slack; and a storage
+budget of $50$\,GB is sufficient (tighter caps cost about $1.2$\,pp).
 
 \paragraph{Limitations and future work.}
-Binary correctness underuses information; graded scores would let the
-randomised and cascade variants dominate by a larger margin. Latency and
-log-loss objectives drop into the SAA MILP without difficulty, and an
-online-learning loop that updates $\hat{\mathbb{P}}$ from production traffic
-would close the deployment loop.
+We follow the dataset convention and treat the nine open-source models as
+having zero per-prompt API cost; in practice, GPU serving carries
+amortised hardware, latency, and maintenance cost that could be added as a
+separate cost term, on top of the storage cap we already model. Beyond
+that, binary correctness underuses information that graded scores would
+expose, which is precisely the regime where the randomised and cascade
+variants should outperform deterministic routing. Latency and log-loss
+objectives drop into the SAA MILP without difficulty, and an
+online-learning loop that updates $\hat{\mathbb{P}}$ from production
+traffic would let the router drift with the user base rather than freezing
+on historical samples.
 
 \paragraph{Personal takeaway.}
-The striking moment was watching a routing policy thirteen times cheaper
-than \textsc{gpt-5} attain its oracle of $0.983$. Treating the data as a
-$240\!\times\!32$ matrix of $(Q,C)$ pairs immediately suggested the two-stage
-form, and HiGHS solved every instance in seconds, keeping modelling and
-analysis fast enough to be genuinely fun.
+Before this project we only had the rough intuition that small models
+should handle easy prompts and stronger ones be reserved for hard
+prompts. Writing out the two-stage formulation made this concrete:
+pool selection and per-prompt routing are two distinct decisions, and
+separating them showed us where the cost savings actually come from.
+The most surprising result was that a six-model pool nearly matches the
+per-prompt oracle quality at a small fraction of \textsc{gpt-5}'s cost,
+and HiGHS solving each instance in seconds made the work genuinely fun.
 
+\newpage
+\bibliographystyle{plainnat}
+\bibliography{iclr2025_conference}
+
+\newpage
 \appendix
 \section{Detailed numerical results}
 \label{app:tables}
@@ -397,36 +502,22 @@ $S^{\max}\!=\!20$\,GB             & $0.9708$ & $0.00441$ & 8 & $-1.2$\,pp\\
 \label{tab:ablations}
 \end{table}
 
-\begin{table}[h]
-\centering\footnotesize
-\begin{minipage}[t]{0.50\textwidth}\centering\vspace{0pt}
-\begin{tabular}{lccc}
-\toprule
-Benchmark & \#prompts & Score & Cost (\$)\\\midrule
-\textsc{AIME}      & 60  & $0.967$ & $0.00592$\\
-\textsc{GPQA}      & 60  & $1.000$ & $0.00136$\\
-\textsc{LCB}       & 60  & $1.000$ & $0.00479$\\
-\textsc{MMLU-Pro}  & 60  & $0.967$ & $0.00086$\\\midrule
-Aggregate           & 240 & $0.983$ & $0.00323$\\
-\bottomrule
-\end{tabular}\\[2pt]
-{\scriptsize Table~3: Per-benchmark breakdown at $B\!=\!\$0.005$, $K\!=\!8$.}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.46\textwidth}\centering\vspace{0pt}
+\begin{table}[h]\centering\footnotesize
 \begin{tabular}{ccccc}
 \toprule
-$\delta$ & nom. & wc & $\Delta$ & $\lambda^\star$\\\midrule
-$0.0$ & $0.983$ & $0.983$ & $0.00$\,pp & $0.00$\\
-$0.1$ & $0.983$ & $0.982$ & $-0.16$\,pp & $1.00$\\
-$0.2$ & $0.983$ & $0.980$ & $-0.33$\,pp & $1.00$\\
-$0.3$ & $0.983$ & $0.978$ & $-0.50$\,pp & $1.00$\\
-$0.5$ & $0.983$ & $0.975$ & $-0.83$\,pp & $1.00$\\
-$0.7$ & $0.983$ & $0.972$ & $-1.17$\,pp & $0.97$\\
+$\delta$ & nominal score & worst-case score & $\Delta$ vs nominal & $\lambda^\star$\\\midrule
+$0.0$ & $0.9833$ & $0.9833$ & $0.00$\,pp & $0.000$\\
+$0.1$ & $0.9833$ & $0.9817$ & $-0.16$\,pp & $1.000$\\
+$0.2$ & $0.9833$ & $0.9800$ & $-0.33$\,pp & $1.000$\\
+$0.3$ & $0.9833$ & $0.9783$ & $-0.50$\,pp & $1.000$\\
+$0.5$ & $0.9833$ & $0.9750$ & $-0.83$\,pp & $1.000$\\
+$0.7$ & $0.9833$ & $0.9717$ & $-1.17$\,pp & $0.967$\\
 \bottomrule
-\end{tabular}\\[2pt]
-{\scriptsize Table~4: DRO sweep at $B\!=\!\$0.005$, $K\!=\!8$. ``wc'' is the
-worst-case score from~\eqref{eq:dro_milp}.}
-\end{minipage}
+\end{tabular}
+\caption{DRO BC-2SP sweep at $B\!=\!\$0.005$, $K\!=\!8$. Worst-case score
+is the value of~\eqref{eq:dro_milp}, and $\lambda^\star$ is the optimal
+weighted median that linearises the absolute values.}
+\label{tab:dro_sweep}
 \end{table}
 
 \end{document}

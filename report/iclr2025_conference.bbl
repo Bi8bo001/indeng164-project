@@ -1,16 +1,76 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
+\bibitem[Birge and Louveaux(1997)]{birge1997introduction}
+John~R. Birge and Fran{\c{c}}ois Louveaux.
+\newblock \emph{Introduction to Stochastic Programming}.
+\newblock Springer, New York, NY, 1997.
+
+\bibitem[Bynum et~al.(2021)Bynum, Hackebeil, Hart, Laird, Nicholson, Siirola,
+  Watson, and Woodruff]{bynum2021pyomo}
+Michael~L. Bynum, Gabriel~A. Hackebeil, William~E. Hart, Carl~D. Laird,
+  Bethany~L. Nicholson, John~D. Siirola, Jean-Paul Watson, and David~L.
+  Woodruff.
+\newblock \emph{Pyomo --- Optimization Modeling in {Python}}, volume~67.
+\newblock Springer, third edition, 2021.
+
+\bibitem[{GLM Team} et~al.(2024){GLM Team}, Zeng, Xu, Wang, Zhang, Yin,
+  et~al.]{glm2024chatglm}
+{GLM Team}, Aohan Zeng, Bin Xu, Bowen Wang, Chenhui Zhang, Da~Yin, et~al.
+\newblock {ChatGLM}: A family of large language models from {GLM-130B} to
+  {GLM-4} all tools.
+\newblock \emph{arXiv preprint arXiv:2406.12793}, 2024.
+
+\bibitem[Grattafiori et~al.(2024)Grattafiori, Dubey, Jauhri, Pandey, Kadian,
+  Al-Dahle, Letman, et~al.]{grattafiori2024llama}
+Aaron Grattafiori, Abhimanyu Dubey, Abhinav Jauhri, Abhinav Pandey, Abhishek
+  Kadian, Ahmad Al-Dahle, Aiesha Letman, et~al.
+\newblock The {Llama} 3 herd of models.
+\newblock \emph{arXiv preprint arXiv:2407.21783}, 2024.
+
+\bibitem[Huangfu and Hall(2018)]{huangfu2018parallelizing}
+Qi~Huangfu and J.~A.~Julian Hall.
+\newblock Parallelizing the dual revised simplex method.
+\newblock \emph{Mathematical Programming Computation}, 10\penalty0
+  (1):\penalty0 119--142, 2018.
+
 \bibitem[Li et~al.(2026)Li, Zhang, Guo, Wang, Tang, Zhang, Chen, Qi, Ye, Bai,
   et~al.]{li2026routerbench}
 Hao Li, Yiqun Zhang, Zhaoyan Guo, Chenxu Wang, Shengji Tang, Qiaosheng Zhang,
   Yang Chen, Biqing Qi, Peng Ye, Lei Bai, et~al.
-\newblock Llmrouterbench: A massive benchmark and unified framework for {LLM}
+\newblock {LLMRouterBench}: A massive benchmark and unified framework for {LLM}
   routing.
 \newblock \emph{arXiv preprint arXiv:2601.07206}, 2026.
+
+\bibitem[Liu et~al.(2024)Liu, Feng, Xue, Wang, Wu, Lu, Zhao,
+  et~al.]{liu2024deepseek}
+Aixin Liu, Bei Feng, Bing Xue, Bingxuan Wang, Bochao Wu, Chengda Lu, Chenggang
+  Zhao, et~al.
+\newblock {DeepSeek-V3} technical report.
+\newblock \emph{arXiv preprint arXiv:2412.19437}, 2024.
+
+\bibitem[Mohajerin~Esfahani and Kuhn(2018)]{esfahani2018data}
+Peyman Mohajerin~Esfahani and Daniel Kuhn.
+\newblock Data-driven distributionally robust optimization using the
+  {Wasserstein} metric: Performance guarantees and tractable reformulations.
+\newblock \emph{Mathematical Programming}, 171\penalty0 (1):\penalty0 115--166,
+  2018.
+
+\bibitem[Shapiro et~al.(2021)Shapiro, Dentcheva, and
+  Ruszczy{\'n}ski]{shapiro2021lectures}
+Alexander Shapiro, Darinka Dentcheva, and Andrzej Ruszczy{\'n}ski.
+\newblock \emph{Lectures on Stochastic Programming: Modeling and Theory}.
+\newblock Society for Industrial and Applied Mathematics, 2021.
+
+\bibitem[Yang et~al.(2025)Yang, Li, Yang, Zhang, Hui, Zheng, Yu,
+  et~al.]{yang2025qwen3}
+An~Yang, Anfeng Li, Baosong Yang, Beichen Zhang, Binyuan Hui, Bo~Zheng, Bowen
+  Yu, et~al.
+\newblock {Qwen3} technical report.
+\newblock \emph{arXiv preprint arXiv:2505.09388}, 2025.
 
 \end{thebibliography}

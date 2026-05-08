@@ -3,44 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: iclr2025_conference.aux
 The style file: plainnat.bst
 Database file #1: iclr2025_conference.bib
-You've used 1 entry,
+You've used 10 entries,
             2773 wiz_defined-function locations,
-            596 strings with 5141 characters,
-and the built_in function-call counts, 836 in all, are:
-= -- 57
-> -- 101
-< -- 0
-+ -- 34
-- -- 33
-* -- 82
-:= -- 149
-add.period$ -- 3
-call.type$ -- 1
-change.case$ -- 13
-chr.to.int$ -- 1
-cite$ -- 2
-duplicate$ -- 20
-empty$ -- 32
-format.name$ -- 34
-if$ -- 155
+            643 strings with 6919 characters,
+and the built_in function-call counts, 5754 in all, are:
+= -- 441
+> -- 556
+< -- 4
++ -- 187
+- -- 177
+* -- 525
+:= -- 961
+add.period$ -- 30
+call.type$ -- 10
+change.case$ -- 82
+chr.to.int$ -- 10
+cite$ -- 20
+duplicate$ -- 202
+empty$ -- 334
+format.name$ -- 193
+if$ -- 1137
 int.to.chr$ -- 1
 int.to.str$ -- 1
-missing$ -- 1
-newline$ -- 13
-num.names$ -- 4
-pop$ -- 26
+missing$ -- 13
+newline$ -- 58
+num.names$ -- 40
+pop$ -- 170
 preamble$ -- 1
-purify$ -- 12
+purify$ -- 74
 quote$ -- 0
-skip$ -- 24
+skip$ -- 184
 stack$ -- 0
-substring$ -- 2
-swap$ -- 1
-text.length$ -- 0
+substring$ -- 70
+swap$ -- 11
+text.length$ -- 1
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 11
+type$ -- 95
 warning$ -- 0
-while$ -- 3
+while$ -- 34
 width$ -- 0
-write$ -- 19
+write$ -- 132

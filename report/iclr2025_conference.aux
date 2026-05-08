@@ -2,49 +2,46 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\citation{birge1997introduction}
+\citation{li2026routerbench}
+\citation{liu2024deepseek}
 \newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {2}Data and Notation}{1}{section.2}\protected@file@percent }
 \newlabel{sec:data}{{2}{1}{Data and Notation}{section.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3}Optimization Model}{2}{section.3}\protected@file@percent }
+\citation{shapiro2021lectures}
+\citation{esfahani2018data}
+\citation{bynum2021pyomo}
+\citation{huangfu2018parallelizing}
 \newlabel{sec:model}{{3}{2}{Optimization Model}{section.3}{}}
-\@writefile{toc}{\contentsline {paragraph}{Decision variables.}{2}{section*.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Population two-stage program.}{2}{section*.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Sample-average approximation (BC-2SP).}{2}{section*.3}\protected@file@percent }
 \newlabel{eq:saa}{{2}{2}{Sample-average approximation (BC-2SP)}{equation.3.2}{}}
-\@writefile{toc}{\contentsline {paragraph}{Distributionally robust extension (DRO BC-2SP).}{2}{section*.4}\protected@file@percent }
-\newlabel{eq:dro_milp}{{3}{2}{Distributionally robust extension (DRO BC-2SP)}{equation.3.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Cost-quality Pareto frontier on \texttt  {routerbench}. Oracle is the per-prompt unconstrained optimum and serves as an upper bound on any pool-constrained policy. BC-2SP (red) reaches the oracle score with a pool of $K\!=\!8$ and dominates both Single-Best baselines by an order of magnitude in cost.}}{3}{figure.caption.8}\protected@file@percent }
+\newlabel{eq:dro_milp}{{4}{2}{Distributionally robust extension (DRO BC-2SP)}{equation.3.4}{}}
 \providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{fig:frontier}{{1}{3}{Cost-quality Pareto frontier on \texttt {routerbench}. Oracle is the per-prompt unconstrained optimum and serves as an upper bound on any pool-constrained policy. BC-2SP (red) reaches the oracle score with a pool of $K\!=\!8$ and dominates both Single-Best baselines by an order of magnitude in cost}{figure.caption.8}{}}
-\@writefile{toc}{\contentsline {paragraph}{Companion formulations.}{3}{section*.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Solving the MILP.}{3}{section*.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Experiments}{3}{section.4}\protected@file@percent }
+\newlabel{fig:frontier}{{1}{3}{Cost-quality Pareto frontier on \texttt {routerbench}. Oracle is the per-prompt unconstrained optimum and serves as an upper bound on any pool-constrained policy. BC-2SP (red) reaches the oracle score with a pool of $K\!=\!8$ and dominates both Single-Best baselines by an order of magnitude in cost}{figure.caption.7}{}}
 \newlabel{sec:exp}{{4}{3}{Experiments}{section.4}{}}
-\@writefile{toc}{\contentsline {paragraph}{Cost-quality Pareto frontier.}{3}{section*.7}\protected@file@percent }
-\newlabel{fig:K}{{2a}{4}{Diminishing returns of pool cap $K$ at $B=\$0.005$}{figure.caption.11}{}}
-\newlabel{sub@fig:K}{{a}{4}{Diminishing returns of pool cap $K$ at $B=\$0.005$}{figure.caption.11}{}}
-\newlabel{fig:pool}{{2b}{4}{Pool composition vs.\ $K$. \textsc {gpt-5} enters at $K=4$}{figure.caption.11}{}}
-\newlabel{sub@fig:pool}{{b}{4}{Pool composition vs.\ $K$. \textsc {gpt-5} enters at $K=4$}{figure.caption.11}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Quality saturates at $K=7$, and a $K=6$ pool already captures $99.7\%$ of the achievable quality.}}{4}{figure.caption.11}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{RQ1: diminishing returns of pool size.}{4}{section*.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Pool composition and traffic concentration.}{4}{section*.10}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Per-benchmark breakdown.}{4}{section*.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{RQ2: distributional robustness.}{4}{section*.13}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Constraint ablations and formulation comparison.}{4}{section*.15}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Price of distributional robustness. The worst-case score drops by about $1.2$ percentage points at $\delta =0.7$, while the nominal score stays at the oracle value.}}{5}{figure.caption.14}\protected@file@percent }
-\newlabel{fig:dro}{{3}{5}{Price of distributional robustness. The worst-case score drops by about $1.2$ percentage points at $\delta =0.7$, while the nominal score stays at the oracle value}{figure.caption.14}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Discussion and Recommendations}{5}{section.5}\protected@file@percent }
+\newlabel{tab:headline}{{1}{3}{Headline operating points along the BC-2SP frontier, against \textsc {gpt-5} (best single model) and the per-prompt oracle (unconstrained upper bound). The bolded row is our recommended setting}{table.caption.9}{}}
+\citation{glm2024chatglm}
+\citation{grattafiori2024llama}
+\citation{yang2025qwen3}
+\newlabel{fig:K}{{2a}{4}{Diminishing returns of pool cap $K$ at $B=\$0.005$}{figure.caption.12}{}}
+\newlabel{sub@fig:K}{{a}{4}{Diminishing returns of pool cap $K$ at $B=\$0.005$}{figure.caption.12}{}}
+\newlabel{fig:pool}{{2b}{4}{Pool composition vs.\ $K$. \textsc {gpt-5} enters at $K=4$}{figure.caption.12}{}}
+\newlabel{sub@fig:pool}{{b}{4}{Pool composition vs.\ $K$. \textsc {gpt-5} enters at $K=4$}{figure.caption.12}{}}
+\newlabel{tab:per_bench}{{2}{4}{Per-benchmark score and cost at $B\!=\!\$0.005$, $K\!=\!8$ (60 prompts each)}{table.caption.14}{}}
+\newlabel{fig:dro}{{3}{5}{Price of distributional robustness. The worst-case score drops by about $1.2$ percentage points at $\delta =0.7$, while the nominal score stays at the oracle value}{figure.caption.16}{}}
 \newlabel{sec:discuss}{{5}{5}{Discussion and Recommendations}{section.5}{}}
-\@writefile{toc}{\contentsline {paragraph}{Answer to RQ1.}{5}{section*.16}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Answer to RQ2.}{5}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Recommendations.}{5}{section*.18}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Limitations and future work.}{5}{section*.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Personal takeaway.}{5}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {A}Detailed numerical results}{5}{appendix.A}\protected@file@percent }
-\newlabel{app:tables}{{A}{5}{Detailed numerical results}{appendix.A}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Comparison of formulations and baselines at representative operating points. Cost in USD per prompt. ``wc'' denotes the worst-case score under the corresponding ambiguity radius.}}{6}{table.caption.21}\protected@file@percent }
-\newlabel{tab:formulations}{{1}{6}{Comparison of formulations and baselines at representative operating points. Cost in USD per prompt. ``wc'' denotes the worst-case score under the corresponding ambiguity radius}{table.caption.21}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Constraint ablations at $B=\$0.005$, $K=8$.}}{6}{table.caption.22}\protected@file@percent }
-\newlabel{tab:ablations}{{2}{6}{Constraint ablations at $B=\$0.005$, $K=8$}{table.caption.22}{}}
-\gdef \@abspage@last{6}
+\bibstyle{plainnat}
+\bibdata{iclr2025_conference}
+\bibcite{birge1997introduction}{{1}{1997}{{Birge and Louveaux}}{{}}}
+\bibcite{bynum2021pyomo}{{2}{2021}{{Bynum et~al.}}{{Bynum, Hackebeil, Hart, Laird, Nicholson, Siirola, Watson, and Woodruff}}}
+\bibcite{glm2024chatglm}{{3}{2024}{{{GLM Team} et~al.}}{{{GLM Team}, Zeng, Xu, Wang, Zhang, Yin, et~al.}}}
+\bibcite{grattafiori2024llama}{{4}{2024}{{Grattafiori et~al.}}{{Grattafiori, Dubey, Jauhri, Pandey, Kadian, Al-Dahle, Letman, et~al.}}}
+\bibcite{huangfu2018parallelizing}{{5}{2018}{{Huangfu and Hall}}{{}}}
+\bibcite{li2026routerbench}{{6}{2026}{{Li et~al.}}{{Li, Zhang, Guo, Wang, Tang, Zhang, Chen, Qi, Ye, Bai, et~al.}}}
+\bibcite{liu2024deepseek}{{7}{2024}{{Liu et~al.}}{{Liu, Feng, Xue, Wang, Wu, Lu, Zhao, et~al.}}}
+\bibcite{esfahani2018data}{{8}{2018}{{Mohajerin~Esfahani and Kuhn}}{{}}}
+\bibcite{shapiro2021lectures}{{9}{2021}{{Shapiro et~al.}}{{Shapiro, Dentcheva, and Ruszczy{\'n}ski}}}
+\bibcite{yang2025qwen3}{{10}{2025}{{Yang et~al.}}{{Yang, Li, Yang, Zhang, Hui, Zheng, Yu, et~al.}}}
+\newlabel{app:tables}{{A}{7}{Detailed numerical results}{appendix.A}{}}
+\newlabel{tab:formulations}{{3}{7}{Comparison of formulations and baselines at representative operating points. Cost in USD per prompt. ``wc'' denotes the worst-case score under the corresponding ambiguity radius}{table.caption.24}{}}
+\newlabel{tab:ablations}{{4}{7}{Constraint ablations at $B=\$0.005$, $K=8$}{table.caption.25}{}}
+\newlabel{tab:dro_sweep}{{5}{7}{DRO BC-2SP sweep at $B\!=\!\$0.005$, $K\!=\!8$. Worst-case score is the value of~\eqref {eq:dro_milp}, and $\lambda ^\star $ is the optimal weighted median that linearises the absolute values}{table.caption.26}{}}
+\gdef \@abspage@last{7}
