@@ -1,6 +1,6 @@
 # Curating a Robust LLM Pool: A Two-Stage Stochastic Optimization Approach for Cost-Constrained LLM Routing
 
-INDENG 164 Final Project, Spring 2026
+Berkeley INDENG 164 Final Project, Spring 2026
 
 Jingwen Yang, Yu Hin Liang
 
