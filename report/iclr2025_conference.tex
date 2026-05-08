@@ -1,0 +1,376 @@
+\documentclass[11pt]{article}
+
+% =========================
+% Packages
+% =========================
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% =========================
+% Code Style
+% =========================
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{red!70!black},
+    commentstyle=\color{green!50!black},
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny,
+    tabsize=4
+}
+
+% =========================
+% Title
+% =========================
+\title{Stochastic Optimization for Intelligent LLM Routing: \\
+A Cost-Quality Trade-off Study for an Agentic AI Company}
+
+
+\author{Yu Hin Liang, Jingwen Yang} 
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+% =========================
+% Abstract
+% =========================
+\begin{abstract}
+Large language model routing aims to assign each user prompt to an appropriate model from a candidate model pool. In agentic AI products such as coding assistants, stronger models often provide higher response quality but incur higher inference cost, while lightweight or open-source models are cheaper but may perform worse on difficult prompts. This project develops a two-stage stochastic optimization framework for selecting a compact model pool and routing uncertain prompt requests to selected models. We formulate budget-constrained and quality-constrained routing models, incorporate realistic deployment constraints, and approximate the stochastic program through sample average approximation using benchmark prompt data. Computational experiments are conducted to analyze the cost-quality frontier, pool-size effects, prompt-distribution robustness, and business implications for production deployment.
+\end{abstract}
+
+% =========================
+% 1. Introduction
+% =========================
+\section{Introduction}
+
+\subsection{Company Background and Business Context}
+
+We consider an agentic AI company, \textit{CodePilot AI}, that provides an AI coding assistant similar to Cursor. Users submit heterogeneous prompts involving coding, mathematics, knowledge reasoning, and general problem solving. The company can route each prompt to one of several candidate large language models, including flagship proprietary models and lightweight open-source models.
+
+The central business challenge is to balance response quality and inference cost. Advanced models may solve more difficult prompts but are expensive to call. Lightweight models are cheaper and may be deployed locally, but their quality can be lower on complex prompts. Therefore, the company needs a principled routing policy that selects a small set of models to maintain and assigns each incoming prompt to an appropriate model.
+
+\subsection{Research Questions}
+
+This project studies the following research questions:
+
+\begin{enumerate}[label=\textbf{RQ\arabic*.}]
+    \item \textbf{Model pool size:} How large should the selected model pool be to achieve near-optimal performance under a fixed cost budget? Do we observe diminishing marginal returns as the pool size increases?
+    \item \textbf{Routing concentration and model diversity:} Which models are selected in the optimal pool? Does the routing policy use models evenly, or does it concentrate traffic on a few dominant models?
+    \item \textbf{Robustness to prompt distribution shift:} How sensitive is the optimal routing policy when the incoming prompt distribution changes, for example when the company receives more coding prompts or more mathematical reasoning prompts?
+\end{enumerate}
+
+\subsection{Why Stochastic Optimization?}
+
+LLM routing naturally involves uncertainty. First, future user prompts are random and may not follow exactly the same distribution as the historical benchmark data. Second, model response quality and output cost may vary due to output length, sampling randomness, and prompt difficulty. Third, deployment decisions occur in stages: the company first selects a model pool before observing future prompts, and then routes each realized prompt to a selected model.
+
+For these reasons, a two-stage stochastic optimization model is suitable. The first-stage decision selects the model pool. The second-stage decision routes realized prompts to selected models. Since the true prompt distribution is unknown, we approximate the stochastic program using sample average approximation (SAA) based on the available dataset.
+
+% =========================
+% 2. Data Description
+% =========================
+\section{Data Description}
+
+The dataset contains cost and performance scores for a set of candidate models evaluated on benchmark prompts from several domains, including mathematics, coding, and knowledge reasoning. Let $\mathcal{P}$ denote the set of observed prompts and $\mathcal{M}$ denote the set of candidate models. For each prompt-model pair $(p,m)$, the dataset provides:
+
+\begin{itemize}
+    \item $C_{pm}$: the inference cost of using model $m$ on prompt $p$;
+    \item $Q_{pm}$: the response quality or performance score of model $m$ on prompt $p$;
+    \item $d(p)$: the domain or benchmark category of prompt $p$, such as math, code, or knowledge.
+\end{itemize}
+
+Some open-source models may have zero API cost, but they can still incur deployment overhead such as storage, latency, and maintenance cost. We incorporate these practical concerns through additional constraints in the optimization model.
+
+% =========================
+% 3. Optimization Model
+% =========================
+\section{Optimization Model}
+
+\subsection{Sets and Indices}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Notation & Description \\
+\midrule
+$\mathcal{M} = \{1,\ldots,M\}$ & Set of candidate models \\
+$\mathcal{P} = \{1,\ldots,P\}$ & Set of observed prompt samples \\
+$\mathcal{D}$ & Set of prompt domains or benchmark categories \\
+$\mathcal{P}_d$ & Set of prompts belonging to domain $d \in \mathcal{D}$ \\
+$\Omega$ & Sample space of future prompt requests \\
+\bottomrule
+\end{tabular}
+\caption{Sets and indices used in the optimization model.}
+\end{table}
+
+\subsection{Parameters}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{ll}
+\toprule
+Parameter & Description \\
+\midrule
+$C_{pm}$ & Cost of assigning prompt $p$ to model $m$ \\
+$Q_{pm}$ & Quality score of model $m$ on prompt $p$ \\
+$K$ & Maximum number of models selected in the pool \\
+$B$ & Average cost budget per prompt \\
+$\tau$ & Minimum acceptable average quality threshold \\
+$S_m$ & Storage requirement of model $m$ \\
+$S^{\max}$ & Total storage budget for locally deployed models \\
+$L_m$ & Expected latency of model $m$ \\
+$L^{\max}$ & Maximum allowed average latency \\
+$w_p$ & Weight of prompt $p$ in the empirical or reweighted distribution \\
+$\lambda$ & Penalty coefficient for quality-threshold violation \\
+\bottomrule
+\end{tabular}
+\caption{Model parameters.}
+\end{table}
+
+\subsection{Decision Variables}
+
+The first-stage variables are model selection decisions:
+
+\[
+y_m =
+\begin{cases}
+1, & \text{if model } m \text{ is selected into the routing pool}, \\
+0, & \text{otherwise}.
+\end{cases}
+\quad \forall m \in \mathcal{M}.
+\]
+
+The second-stage variables are routing decisions after prompts are realized:
+
+\[
+x_{pm} =
+\begin{cases}
+1, & \text{if prompt } p \text{ is assigned to model } m, \\
+0, & \text{otherwise}.
+\end{cases}
+\quad \forall p \in \mathcal{P}, m \in \mathcal{M}.
+\]
+
+We also introduce slack variables for soft quality guarantees:
+
+\[
+s_p \geq 0, \quad \forall p \in \mathcal{P},
+\]
+
+where $s_p$ measures the violation of the minimum prompt-level quality requirement.
+
+% =========================
+% 3.1 Population Form
+% =========================
+\subsection{Population Two-Stage Stochastic Formulation}
+
+Let $\xi$ denote a random future prompt drawn from the true prompt distribution $\mathbb{P}$. The first-stage decision selects a model pool $y$. After observing prompt $\xi$, the second-stage routing decision assigns the prompt to one selected model.
+
+The population-level stochastic optimization problem can be written as:
+
+\begin{align}
+\max_{y} \quad 
+& \mathbb{E}_{\xi \sim \mathbb{P}}
+\left[
+    \max_{x(\xi)}
+    \sum_{m \in \mathcal{M}} Q(\xi,m)x_{\xi m}
+\right] \\
+\text{s.t.} \quad
+& \sum_{m \in \mathcal{M}} y_m \leq K, \\
+& y_m \in \{0,1\}, \quad \forall m \in \mathcal{M}, \\
+& x_{\xi m} \leq y_m, \quad \forall m \in \mathcal{M}, \\
+& \sum_{m \in \mathcal{M}} x_{\xi m} = 1, \\
+& x_{\xi m} \in \{0,1\}, \quad \forall m \in \mathcal{M}, \\
+& \mathbb{E}_{\xi \sim \mathbb{P}}
+\left[
+    \sum_{m \in \mathcal{M}} C(\xi,m)x_{\xi m}
+\right]
+\leq B.
+\end{align}
+
+This population problem cannot be solved directly because the true distribution $\mathbb{P}$ is unknown. Therefore, we approximate it using the empirical prompt dataset.
+
+% =========================
+% 3.2 SAA Model
+% =========================
+\subsection{Sample Average Approximation}
+
+Using observed prompts $\mathcal{P}$, we approximate the expected quality and cost with weighted sample averages. The SAA formulation is:
+
+\begin{align}
+\max_{x,y,s} \quad 
+& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} Q_{pm} x_{pm}
+- \lambda \sum_{p \in \mathcal{P}} w_p s_p
+\label{eq:saa_obj} \\
+\text{s.t.} \quad
+& \sum_{m \in \mathcal{M}} x_{pm} = 1,
+&& \forall p \in \mathcal{P},
+\label{eq:assignment} \\
+& x_{pm} \leq y_m,
+&& \forall p \in \mathcal{P}, m \in \mathcal{M},
+\label{eq:linking} \\
+& \sum_{m \in \mathcal{M}} y_m \leq K,
+\label{eq:pool_size} \\
+& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} C_{pm} x_{pm} \leq B,
+\label{eq:budget} \\
+& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} L_m x_{pm} \leq L^{\max},
+\label{eq:latency} \\
+& \sum_{m \in \mathcal{M}} S_m y_m \leq S^{\max},
+\label{eq:storage} \\
+& \sum_{m \in \mathcal{M}} Q_{pm}x_{pm} + s_p \geq \tau,
+&& \forall p \in \mathcal{P},
+\label{eq:min_quality} \\
+& x_{pm} \in \{0,1\},
+&& \forall p \in \mathcal{P}, m \in \mathcal{M}, \\
+& y_m \in \{0,1\},
+&& \forall m \in \mathcal{M}, \\
+& s_p \geq 0,
+&& \forall p \in \mathcal{P}.
+\end{align}
+
+The objective in Equation~\eqref{eq:saa_obj} maximizes expected quality while penalizing violations of prompt-level quality guarantees. Constraint~\eqref{eq:assignment} ensures each prompt is assigned to exactly one model. Constraint~\eqref{eq:linking} ensures that prompts can only be assigned to selected models. Constraint~\eqref{eq:pool_size} limits the size of the model pool. Constraint~\eqref{eq:budget} imposes an average inference-cost budget. Constraints~\eqref{eq:latency} and~\eqref{eq:storage} are realistic deployment constraints. Constraint~\eqref{eq:min_quality} imposes a soft minimum quality guarantee.
+
+\subsection{Robust Prompt Distribution Analysis}
+
+To study robustness under prompt distribution shift, we define different prompt weights $w_p$. The default empirical distribution uses:
+
+\[
+w_p = \frac{1}{|\mathcal{P}|}, \quad \forall p \in \mathcal{P}.
+\]
+
+For a coding-heavy company, we assign larger weights to coding prompts:
+
+\[
+w_p =
+\begin{cases}
+\frac{\rho}{|\mathcal{P}_{\text{code}}|}, & p \in \mathcal{P}_{\text{code}}, \\
+\frac{1-\rho}{|\mathcal{P} \setminus \mathcal{P}_{\text{code}}|}, & p \notin \mathcal{P}_{\text{code}},
+\end{cases}
+\]
+
+where $\rho \in [0,1]$ controls the importance of coding prompts. By solving the model for multiple values of $\rho$, we evaluate whether the selected model pool and routing policy are stable under prompt distribution shift.
+
+\subsection{Alternative Formulation: Cost Minimization under Quality Constraint}
+
+As an alternative formulation, we also consider minimizing cost subject to a target quality level:
+
+\begin{align}
+\min_{x,y,s} \quad 
+& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} C_{pm}x_{pm}
++ \lambda \sum_{p \in \mathcal{P}} w_p s_p \\
+\text{s.t.} \quad
+& \sum_{p \in \mathcal{P}} w_p \sum_{m \in \mathcal{M}} Q_{pm}x_{pm}
++ \sum_{p \in \mathcal{P}} w_p s_p
+\geq Q^{\min}, \\
+& \text{Constraints } \eqref{eq:assignment} \text{--} \eqref{eq:storage}, \\
+& x_{pm} \in \{0,1\}, \quad y_m \in \{0,1\}, \quad s_p \geq 0.
+\end{align}
+
+This formulation is useful when the company has a fixed service-quality target and wants to minimize operating cost.
+
+% =========================
+% 4. Computational Implementation
+% =========================
+\section{Computational Implementation}
+
+We implement the proposed mixed-integer optimization models in Pyomo and solve them using a mixed-integer linear programming solver. The full implementation is submitted separately together with this report.
+
+The implementation takes as input the prompt-model cost matrix $C_{pm}$, the quality matrix $Q_{pm}$, prompt domain labels, and model-level metadata such as storage and latency assumptions. For each experiment, we specify the model hyperparameters, including the model pool size $K$, budget level $B$, quality threshold $\tau$, and prompt-distribution weights $w_p$.
+
+After solving the optimization problem, we extract the following quantities for analysis:
+
+\begin{itemize}
+    \item the selected model pool $\{m \in \mathcal{M}: y_m = 1\}$;
+    \item the routing assignment $\{x_{pm}\}_{p \in \mathcal{P}, m \in \mathcal{M}}$;
+    \item the average routing cost;
+    \item the average response quality;
+    \item the usage share of each selected model;
+    \item the number and magnitude of quality-threshold violations.
+\end{itemize}
+
+We repeat the optimization over different budget levels, pool-size limits, and prompt-distribution weights to generate the cost-quality frontier, ablation studies, and robustness analysis presented in the next section.
+
+% =========================
+% 5. Experiments and Visualization
+% =========================
+\section{Experiments and Visualization}
+
+\subsection{Experimental Design}
+
+We conduct the following computational experiments:
+
+\begin{enumerate}
+    \item \textbf{Cost-quality frontier:} Solve the budget-constrained model under different budget levels $B$ and plot average cost against average quality.
+    \item \textbf{Pool-size ablation:} Vary the maximum pool size $K$ and measure the marginal improvement in quality.
+    \item \textbf{Prompt-distribution robustness:} Reweight prompt categories using different values of $\rho$ and analyze changes in selected models and routing decisions.
+    \item \textbf{Constraint ablation:} Compare solutions with and without storage, latency, and minimum-quality constraints.
+\end{enumerate}
+
+\subsection{Cost-Quality Frontier}
+
+
+\subsection{Effect of Model Pool Size}
+
+
+\subsection{Routing Usage Distribution}
+
+% =========================
+% 6. Discussion and Recommendations
+% =========================
+\section{Discussion and Recommendations}
+
+\subsection{Answers to Research Questions}
+
+\paragraph{RQ1: Model pool size.}
+We analyze whether increasing $K$ improves average quality and whether the improvement saturates after a small number of models. If the quality gain becomes marginal beyond a certain $K$, this suggests that the company can maintain a compact model pool without sacrificing much performance.
+
+\paragraph{RQ2: Routing concentration and model diversity.}
+We examine the selected models and their usage shares. A highly concentrated routing policy may indicate that one model dominates the cost-quality trade-off. A more diverse routing policy may suggest that different models specialize in different prompt domains.
+
+\paragraph{RQ3: Prompt-distribution robustness.}
+We compare model pools selected under different prompt weights. If the selected pool changes substantially when coding prompts receive higher weight, the deployment policy should be customized for the company's expected user base.
+
+\subsection{Business Recommendations}
+
+Based on the optimization results, we provide the following recommendations:
+
+\begin{itemize}
+    \item Select a model pool size that captures most of the achievable quality while limiting engineering overhead.
+    \item Use lightweight or open-source models for easy prompts when they satisfy quality requirements.
+    \item Reserve expensive flagship models for prompts where their marginal quality improvement justifies the additional cost.
+    \item Monitor prompt distribution over time and periodically re-solve the routing optimization problem.
+\end{itemize}
+
+\subsection{Limitations and Future Work}
+
+This project uses benchmark data as a proxy for future prompt requests. In production, the company would need to collect real user prompts and online feedback. Future extensions include dynamic real-time routing, cascading routing with verifiers, online learning, and distributionally robust optimization with formal ambiguity sets.
+
+% =========================
+% 7. Personal Takeaway
+% =========================
+\section{Personal Takeaway}
+
+Through this project, we learned how operations research can provide a structured framework for decision-making in modern AI systems. LLM routing is not only a machine learning problem but also an optimization problem involving cost, quality, uncertainty, and deployment constraints. This project helped us understand how stochastic programming and mixed-integer optimization can be used to design more interpretable and practical AI infrastructure.
+
+% =========================
+% References
+% =========================
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}
